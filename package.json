@@ -1,0 +1,45 @@
+{
+  "name": "vidjutsu",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the VidJutsu video intelligence API",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "generate": "bun scripts/generate-schema.ts && bun scripts/generate-methods.ts",
+    "build": "tsc",
+    "prepublishOnly": "bun run generate && bun run build"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.13.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "openapi-typescript": "^7.8.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "vidjutsu",
+    "video",
+    "ai",
+    "api",
+    "sdk",
+    "watch",
+    "extract",
+    "transcribe"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tfcbot/vidjutsu-sdk"
+  }
+}
