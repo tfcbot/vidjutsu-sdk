@@ -1,0 +1,58 @@
+name: Sync OpenAPI Spec
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+
+      - run: bun install
+
+      - name: Regenerate from latest spec
+        run: bun run generate
+
+      - name: Check for changes
+        id: diff
+        run: |
+          if git diff --quiet src/schema.d.ts src/methods.ts; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Bump patch version
+        if: steps.diff.outputs.changed == 'true'
+        run: npm version patch --no-git-tag-version
+
+      - name: Commit and tag
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          VERSION=$(node -p "require('./package.json').version")
+          git add -A
+          git commit -m "chore: regenerate SDK from updated OpenAPI spec (v${VERSION})"
+          git tag "v${VERSION}"
+          git push
+          git push origin "v${VERSION}"
