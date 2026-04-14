@@ -50,7 +50,7 @@ function readConfigFile(): ConfigFile | null {
  * const { data } = await vj.transcribeMedia({ mediaUrl: 'https://...' });
  *
  * // Raw openapi-fetch (escape hatch):
- * const { data } = await vj.api.GET('/v1/balance');
+ * const { data } = await vj.api.GET('/v1/usage');
  * ```
  */
 export function createClient(config: VidJutsuConfig = {}): VidJutsuClient {
