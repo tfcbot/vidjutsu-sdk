@@ -1,0 +1,103 @@
+name: Test CLI Install
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - '.github/workflows/test-cli-install.yml'
+      - '.github/workflows/release.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - '.github/workflows/test-cli-install.yml'
+      - '.github/workflows/release.yml'
+  release:
+    types: [published]
+
+jobs:
+  test-install-script:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify install.sh is valid shell
+        run: bash -n install.sh
+
+      - name: Test GitHub release API returns latest version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          REPO="tfcbot/vidjutsu-sdk"
+          HTTP_CODE=$(curl -s -o /tmp/release.json -w "%{http_code}" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/${REPO}/releases/latest")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::GitHub releases API returned HTTP $HTTP_CODE (expected 200)"
+            cat /tmp/release.json
+            exit 1
+          fi
+
+          VERSION=$(grep '"tag_name"' /tmp/release.json | sed -E 's/.*"v?([^"]+)".*/\1/')
+          if [ -z "$VERSION" ]; then
+            echo "::error::Could not parse version from release response"
+            cat /tmp/release.json
+            exit 1
+          fi
+
+          echo "Latest version: v${VERSION}"
+          echo "VERSION=${VERSION}" >> "$GITHUB_ENV"
+
+      - name: Verify binary download URL exists
+        run: |
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          ARCH=$(uname -m)
+          case "$ARCH" in
+            x86_64|amd64)  ARCH="x64" ;;
+            aarch64|arm64) ARCH="arm64" ;;
+          esac
+          PLATFORM="${OS}-${ARCH}"
+
+          URL="https://github.com/tfcbot/vidjutsu-sdk/releases/download/v${VERSION}/vidjutsu-${PLATFORM}"
+          echo "Checking binary URL: $URL"
+
+          HTTP_CODE=$(curl -sL -o /dev/null -w "%{http_code}" "$URL")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Binary download returned HTTP $HTTP_CODE for vidjutsu-${PLATFORM}"
+            echo "Expected URL: $URL"
+            exit 1
+          fi
+
+          echo "Binary exists for ${PLATFORM}"
+
+      - name: Run install.sh (with pinned version)
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: bash install.sh
+
+      - name: Verify CLI is callable
+        run: vidjutsu --version || vidjutsu --help
+
+  # Smoke-test on fresh release to catch missing platform binaries immediately
+  test-install-on-release:
+    if: github.event_name == 'release'
+    needs: test-install-script
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install via curl pipe (production path)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/tfcbot/vidjutsu-sdk/main/install.sh | bash
+
+      - name: Verify CLI works
+        run: vidjutsu --version || vidjutsu --help

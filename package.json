@@ -1,7 +1,7 @@
 {
   "name": "vidjutsu",
-  "version": "0.2.0",
-  "description": "TypeScript SDK for the VidJutsu video intelligence API",
+  "version": "1.0.0",
+  "description": "VidJutsu — video intelligence API. SDK + CLI.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,15 +11,28 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "bin": {
+    "vidjutsu": "./dist/cli/index.mjs"
+  },
   "files": [
-    "dist"
+    "dist",
+    "install.sh"
   ],
   "scripts": {
     "generate": "bun scripts/generate-schema.ts && bun scripts/generate-methods.ts",
-    "build": "tsc",
+    "build": "bun run build:sdk && bun run build:cli",
+    "build:sdk": "tsc",
+    "build:cli": "bun build src/cli/index.ts --outfile dist/cli/index.mjs --target node",
+    "build:binary": "bun run build:binary:darwin-arm64 && bun run build:binary:darwin-x64 && bun run build:binary:linux-x64 && bun run build:binary:linux-arm64",
+    "build:binary:darwin-arm64": "bun build src/cli/index.ts --compile --target=bun-darwin-arm64 --outfile dist/vidjutsu-darwin-arm64",
+    "build:binary:darwin-x64": "bun build src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/vidjutsu-darwin-x64",
+    "build:binary:linux-x64": "bun build src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/vidjutsu-linux-x64",
+    "build:binary:linux-arm64": "bun build src/cli/index.ts --compile --target=bun-linux-arm64 --outfile dist/vidjutsu-linux-arm64",
+    "dev": "bun run src/cli/index.ts",
     "prepublishOnly": "bun run generate && bun run build"
   },
   "dependencies": {
+    "citty": "^0.1",
     "openapi-fetch": "^0.13.5"
   },
   "devDependencies": {
@@ -33,6 +46,7 @@
     "ai",
     "api",
     "sdk",
+    "cli",
     "watch",
     "extract",
     "transcribe"
