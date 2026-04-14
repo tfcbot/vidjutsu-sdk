@@ -1,0 +1,46 @@
+name: Sync CLI with API Changes
+
+on:
+  repository_dispatch:
+    types: [api-updated]
+
+jobs:
+  update-cli:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          model: claude-sonnet-4-6
+          prompt: |
+            The VidJutsu API repo was just updated. Commit: ${{ github.event.client_payload.sha }}
+            Commit message: ${{ github.event.client_payload.message }}
+
+            Your job:
+            1. Fetch the latest API info endpoint to see what endpoints exist:
+               curl -s https://effervescent-ermine-544.convex.site/v1/info | jq .
+            2. Compare the endpoints listed in the API response against the CLI commands in src/cli/commands/
+            3. Check if there are new endpoints the CLI doesn't support yet, or if any existing endpoints changed
+            4. If changes are needed:
+               - Update or create CLI commands to match the API
+               - Follow the exact patterns in the existing commands (read src/cli/commands/auth.ts and src/cli/commands/upload.ts as references)
+               - Use the client from src/client.ts
+            5. If no CLI changes are needed (e.g., the API change was backend-only), say so and exit
+
+            Do NOT change the release workflow, install script, or package.json version.
+            Only modify files in src/ if the API surface changed.
+          allowed_tools: "Read,Write,Edit,Bash,Glob,Grep"
+          direct_prompt: true
+          create_pr: true
+          pr_title: "sync: Update CLI for API changes (${{ github.event.client_payload.sha }})"
+          pr_body: |
+            Automated sync from API repo.
+
+            Trigger commit: tfcbot/vidjutsu@${{ github.event.client_payload.sha }}
+            Message: ${{ github.event.client_payload.message }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

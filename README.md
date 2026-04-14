@@ -131,7 +131,7 @@ const { data, error } = await vj.api.POST("/v1/watch", {
 
 - [Documentation](https://docs.vidjutsu.ai)
 - [API Reference](https://docs.vidjutsu.ai/api-reference/introduction)
-- [CLI](https://github.com/tfcbot/vidjutsu-cli)
+- [CLI](https://github.com/tfcbot/vidjutsu-sdk) (included in this package)
 - [OpenAPI Spec](https://raw.githubusercontent.com/tfcbot/vidjutsu-openapi/main/openapi/spec.json)
 
 ## License
