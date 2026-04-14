@@ -119,15 +119,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/balance": {
+    "/v1/usage": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get credit balance */
-        get: operations["getBalance"];
+        /** Get daily usage and rate limits */
+        get: operations["getUsage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -147,7 +147,7 @@ export interface paths {
         put?: never;
         /**
          * Check spec
-         * @description Validate a VidLang spec against built-in rules and optional custom rules. 5 credits.
+         * @description Validate a VidLang spec against enabled rules. Rules are off by default — caller must enable at least one. 5 credits.
          */
         post: operations["checkSpec"];
         delete?: never;
@@ -174,23 +174,6 @@ export interface paths {
          */
         put: operations["updateCheckRules"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/credits": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create checkout session */
-        post: operations["createCheckout"];
         delete?: never;
         options?: never;
         head?: never;
@@ -581,10 +564,15 @@ export interface components {
             /** @enum {boolean} */
             updated: true;
         };
-        BalanceResponse: {
-            /** Format: int32 */
-            credits: number;
+        UsageResponse: {
             clientId: string;
+            usage: {
+                [key: string]: {
+                    limit?: number;
+                    remaining?: number;
+                };
+            };
+            resetsAt: string;
         };
         BearerAuth: {
             /**
@@ -603,7 +591,7 @@ export interface components {
             spec: {
                 [key: string]: unknown;
             };
-            /** @description VidLang rules config. All rules off by default — enable explicitly. E.g. { "VL013": true, "VL011": { "severity": "warning" } } */
+            /** @description VidLang rules config. All rules off by default — enable explicitly. E.g. { "VL013": true, "VL003": false, "VL011": { "severity": "warning" } } */
             rules: {
                 [key: string]: unknown;
             };
@@ -1199,7 +1187,7 @@ export interface operations {
             };
         };
     };
-    getBalance: {
+    getUsage: {
         parameters: {
             query?: never;
             header?: never;
@@ -1214,7 +1202,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BalanceResponse"];
+                    "application/json": components["schemas"]["UsageResponse"];
                 };
             };
         };
@@ -1283,30 +1271,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckRulesResponse"];
-                };
-            };
-        };
-    };
-    createCheckout: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApiKeyCreateRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyCreateResponse"];
                 };
             };
         };
