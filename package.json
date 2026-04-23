@@ -1,6 +1,6 @@
 {
   "name": "vidjutsu",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "VidJutsu — video intelligence API. SDK + CLI.",
   "type": "module",
   "main": "./dist/index.js",
