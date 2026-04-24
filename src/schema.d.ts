@@ -119,23 +119,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/usage": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get daily usage and rate limits */
-        get: operations["getUsage"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/check": {
         parameters: {
             query?: never;
@@ -174,6 +157,46 @@ export interface paths {
          */
         put: operations["updateCheckRules"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/prompt": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check prompt compliance
+         * @description Scan a caption, ad copy, draft script, or other text against a platform's current TOS / Community Guidelines. Returns a risk score with cited policy clauses. Informational only, not legal advice. 100/day rate limit.
+         */
+        post: operations["checkCompliancePrompt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/compliance/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check video compliance
+         * @description Scan a video against a platform's current TOS / Community Guidelines. Returns a risk score with cited policy clauses. Informational only, not legal advice. 20/day rate limit.
+         */
+        post: operations["checkComplianceVideo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -388,6 +411,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get daily usage
+         * @description Returns remaining rate-limit capacity per endpoint for the caller. Resets daily at 00:00 UTC.
+         */
+        get: operations["getUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/watch": {
         parameters: {
             query?: never;
@@ -475,18 +518,6 @@ export interface components {
             message: string;
             setup?: string;
         };
-        ApiKeyCreateRequest: {
-            /** Format: int32 */
-            credits?: number;
-            email?: string;
-        };
-        ApiKeyCreateResponse: {
-            url: string;
-            /** Format: int32 */
-            credits: number;
-            /** Format: int32 */
-            amount: number;
-        };
         ApiKeyRecoverRequest: {
             email: string;
         };
@@ -564,16 +595,6 @@ export interface components {
             /** @enum {boolean} */
             updated: true;
         };
-        UsageResponse: {
-            clientId: string;
-            usage: {
-                [key: string]: {
-                    limit?: number;
-                    remaining?: number;
-                };
-            };
-            resetsAt: string;
-        };
         BearerAuth: {
             /**
              * @description Http authentication
@@ -612,6 +633,84 @@ export interface components {
         };
         CheckRulesUpdateRequest: {
             rules: string[];
+        };
+        ComplianceCheckResponse: {
+            /**
+             * Format: int32
+             * @description Composite risk score 0-100 computed deterministically from violation severities.
+             */
+            riskScore: number;
+            /** @enum {string} */
+            verdict: "safe" | "caution" | "high-risk" | "likely-violation";
+            violations: components["schemas"]["ComplianceViolation"][];
+            /** @enum {string} */
+            platform: "youtube" | "tiktok" | "instagram" | "facebook-ads";
+            /** @description ISO date of the newest active policy snapshot this scan was evaluated against. */
+            policySnapshotDate: string;
+            /** @description Informational disclaimer. This response is not legal advice. */
+            disclaimer: string;
+        };
+        ComplianceCitation: {
+            /** @description Exact quoted clause from the platform's policy page. */
+            text: string;
+            /** @description URL to the source policy page (may include #anchor). */
+            sourceUrl: string;
+            /** @description ISO date (YYYY-MM-DD) of the policy snapshot this citation was drawn from. */
+            policyVersion: string;
+        };
+        ComplianceContext: {
+            caption?: string;
+            hashtags?: string[];
+            monetized?: boolean;
+        };
+        ComplianceEvidence: {
+            /**
+             * Format: double
+             * @description Timestamp (seconds) in the source video where the evidence appears.
+             */
+            timestamp?: number;
+            /** @description Relevant transcript excerpt, if any. */
+            transcriptExcerpt?: string;
+            /** @description Short description of the visual evidence, if any. */
+            visualDescription?: string;
+        };
+        CompliancePromptRequest: {
+            /** @description The text to evaluate — caption, ad copy, draft script, upload description, etc. */
+            text: string;
+            /** @enum {string} */
+            platform: "youtube" | "tiktok" | "instagram" | "facebook-ads";
+            /**
+             * @description Optional label for logs; does not affect rule selection.
+             * @enum {string}
+             */
+            kind?: "caption" | "script" | "ad-copy" | "description" | "other";
+            /** @description Optional publication metadata that affects risk (caption, hashtags, monetization intent). */
+            context?: components["schemas"]["ComplianceContext"];
+        };
+        ComplianceVideoRequest: {
+            /** @description Public URL of the video to scan. */
+            videoUrl: string;
+            /** @enum {string} */
+            platform: "youtube" | "tiktok" | "instagram" | "facebook-ads";
+            /**
+             * @description Optional content format hint. Inferred from duration when omitted.
+             * @enum {string}
+             */
+            format?: "shortform" | "longform";
+            /** @description Optional publication metadata that affects risk (caption, hashtags, monetization intent). */
+            context?: components["schemas"]["ComplianceContext"];
+        };
+        ComplianceViolation: {
+            /** @description Stable identifier of the matched rule in our compliance corpus. */
+            ruleId: string;
+            /** @description Rule category, e.g. monetization, community-guidelines, ad-policy, copyright, minors. */
+            category: string;
+            /** @enum {string} */
+            severity: "low" | "medium" | "high" | "critical";
+            /** @description Plain-language reasoning tying the video to the cited rule. Informational, not legal advice. */
+            explanation: string;
+            citation: components["schemas"]["ComplianceCitation"];
+            evidence: components["schemas"]["ComplianceEvidence"];
         };
         CreditCosts: {
             /**
@@ -868,6 +967,19 @@ export interface components {
         UploadUrlRequest: {
             sourceUrl: string;
             contentType?: string;
+        };
+        UsageResponse: {
+            clientId: string;
+            usage: {
+                [key: string]: components["schemas"]["UsageWindow"];
+            };
+            resetsAt: string;
+        };
+        UsageWindow: {
+            /** Format: int32 */
+            limit: number;
+            /** Format: int32 */
+            remaining: number;
         };
         VerifyConfirmBody: {
             email: string;
@@ -1187,26 +1299,6 @@ export interface operations {
             };
         };
     };
-    getUsage: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["UsageResponse"];
-                };
-            };
-        };
-    };
     checkSpec: {
         parameters: {
             query?: never;
@@ -1271,6 +1363,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CheckRulesResponse"];
+                };
+            };
+        };
+    };
+    checkCompliancePrompt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompliancePromptRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCheckResponse"];
+                };
+            };
+        };
+    };
+    checkComplianceVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ComplianceVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ComplianceCheckResponse"];
                 };
             };
         };
@@ -1667,6 +1807,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UploadResponse"];
+                };
+            };
+        };
+    };
+    getUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageResponse"];
                 };
             };
         };

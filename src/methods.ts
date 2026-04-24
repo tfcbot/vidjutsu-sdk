@@ -38,14 +38,16 @@ export interface VidJutsuMethods {
   confirmVerification(body: ReqBody<"/v1/auth/verify/confirm", "post">): ReturnType<Client["POST"]>;
   /** Request email verification code Public endpoint. */
   requestVerification(body: ReqBody<"/v1/auth/verify/request", "post">): ReturnType<Client["POST"]>;
-  /** Get daily usage and rate limits */
-  getUsage(): ReturnType<Client["GET"]>;
   /** Check spec Auth required. 5 credits. */
   checkSpec(body: ReqBody<"/v1/check", "post">): ReturnType<Client["POST"]>;
   /** Get check rules Auth required. */
   getCheckRules(): ReturnType<Client["GET"]>;
   /** Update check rules Auth required. */
   updateCheckRules(body: ReqBody<"/v1/check/rules", "put">): ReturnType<Client["PUT"]>;
+  /** Check prompt compliance */
+  checkCompliancePrompt(body: ReqBody<"/v1/compliance/prompt", "post">): ReturnType<Client["POST"]>;
+  /** Check video compliance */
+  checkComplianceVideo(body: ReqBody<"/v1/compliance/video", "post">): ReturnType<Client["POST"]>;
   /** Check checkout status Public endpoint. */
   getCheckoutStatus(query?: QueryParams<"/v1/credits/status", "get">): ReturnType<Client["GET"]>;
   /** Extract from media Auth required. 5 credits. */
@@ -80,6 +82,8 @@ export interface VidJutsuMethods {
   uploadFile(): ReturnType<Client["POST"]>;
   /** Upload from URL Auth required. */
   uploadFromUrl(body: ReqBody<"/v1/upload/url", "post">): ReturnType<Client["POST"]>;
+  /** Get daily usage */
+  getUsage(): ReturnType<Client["GET"]>;
   /** Watch media Auth required. 10 credits. */
   watchMedia(body: ReqBody<"/v1/watch", "post">): ReturnType<Client["POST"]>;
 }
@@ -122,9 +126,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     requestVerification(body) {
       return client.POST("/v1/auth/verify/request" as any, { body } as any);
     },
-    getUsage() {
-      return client.GET("/v1/usage" as any, {} as any);
-    },
     checkSpec(body) {
       return client.POST("/v1/check" as any, { body } as any);
     },
@@ -133,6 +134,12 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     updateCheckRules(body) {
       return client.PUT("/v1/check/rules" as any, { body } as any);
+    },
+    checkCompliancePrompt(body) {
+      return client.POST("/v1/compliance/prompt" as any, { body } as any);
+    },
+    checkComplianceVideo(body) {
+      return client.POST("/v1/compliance/video" as any, { body } as any);
     },
     getCheckoutStatus(query) {
       return client.GET("/v1/credits/status" as any, { params: { query } } as any);
@@ -184,6 +191,9 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     uploadFromUrl(body) {
       return client.POST("/v1/upload/url" as any, { body } as any);
+    },
+    getUsage() {
+      return client.GET("/v1/usage" as any, {} as any);
     },
     watchMedia(body) {
       return client.POST("/v1/watch" as any, { body } as any);
