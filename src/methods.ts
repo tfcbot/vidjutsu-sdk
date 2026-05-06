@@ -50,6 +50,8 @@ export interface VidJutsuMethods {
   checkComplianceVideo(body: ReqBody<"/v1/compliance/video", "post">): ReturnType<Client["POST"]>;
   /** Check checkout status Public endpoint. */
   getCheckoutStatus(query?: QueryParams<"/v1/credits/status", "get">): ReturnType<Client["GET"]>;
+  /** Burn fine-print disclaimer onto video */
+  createDisclaimer(body: ReqBody<"/v1/disclaimer", "post">): ReturnType<Client["POST"]>;
   /** Extract from media Auth required. 5 credits. */
   extractMedia(body: ReqBody<"/v1/extract", "post">): ReturnType<Client["POST"]>;
   /** API info Public endpoint. */
@@ -143,6 +145,9 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     getCheckoutStatus(query) {
       return client.GET("/v1/credits/status" as any, { params: { query } } as any);
+    },
+    createDisclaimer(body) {
+      return client.POST("/v1/disclaimer" as any, { body } as any);
     },
     extractMedia(body) {
       return client.POST("/v1/extract" as any, { body } as any);

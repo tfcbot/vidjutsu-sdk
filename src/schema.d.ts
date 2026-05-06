@@ -220,6 +220,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/disclaimer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Burn fine-print disclaimer onto video
+         * @description Burns a fine-print disclaimer centered at the bottom of a video using FFmpeg ASS subtitles. Use for FTC-style disclosures like results-not-typical, paid-endorsement, or AI-generated labels. Returns CDN URL of the result. 5 credits.
+         */
+        post: operations["createDisclaimer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/extract": {
         parameters: {
             query?: never;
@@ -644,7 +664,7 @@ export interface components {
             verdict: "safe" | "caution" | "high-risk" | "likely-violation";
             violations: components["schemas"]["ComplianceViolation"][];
             /** @enum {string} */
-            platform: "youtube" | "tiktok" | "instagram" | "facebook-ads";
+            platform: "youtube" | "tiktok" | "instagram" | "meta-ads" | "ftc";
             /** @description ISO date of the newest active policy snapshot this scan was evaluated against. */
             policySnapshotDate: string;
             /** @description Informational disclaimer. This response is not legal advice. */
@@ -678,7 +698,7 @@ export interface components {
             /** @description The text to evaluate — caption, ad copy, draft script, upload description, etc. */
             text: string;
             /** @enum {string} */
-            platform: "youtube" | "tiktok" | "instagram" | "facebook-ads";
+            platform: "youtube" | "tiktok" | "instagram" | "meta-ads" | "ftc";
             /**
              * @description Optional label for logs; does not affect rule selection.
              * @enum {string}
@@ -691,7 +711,7 @@ export interface components {
             /** @description Public URL of the video to scan. */
             videoUrl: string;
             /** @enum {string} */
-            platform: "youtube" | "tiktok" | "instagram" | "facebook-ads";
+            platform: "youtube" | "tiktok" | "instagram" | "meta-ads" | "ftc";
             /**
              * @description Optional content format hint. Inferred from duration when omitted.
              * @enum {string}
@@ -743,6 +763,23 @@ export interface components {
              * @description Check spec against rules
              */
             check: number;
+        };
+        DisclaimerRequest: {
+            /** @description URL of the source video */
+            videoUrl: string;
+            /** @description Disclaimer text. Use \\n for line breaks. Kept fine-print style at the bottom of the frame. */
+            text: string;
+            /**
+             * Format: int32
+             * @description Font size in pixels. Defaults to 2.2% of video height (fine-print).
+             */
+            fontSize?: number;
+        };
+        DisclaimerResponse: {
+            /** @description Disclaimer asset ID */
+            id: string;
+            /** @description CDN URL of the disclaimed video */
+            resultUrl: string;
         };
         ExtractAudio: {
             url: string;
@@ -1433,6 +1470,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiKeyStatusResponse"];
+                };
+            };
+        };
+    };
+    createDisclaimer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisclaimerRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DisclaimerResponse"];
                 };
             };
         };
