@@ -471,6 +471,486 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/scrape/tiktok/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok profile
+         * @description Fetch public TikTok profile data via Scrape Creators. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTikTokProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/profile/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok profile videos
+         * @description Paginated videos for a TikTok profile. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTikTokProfileVideos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok video
+         * @description Single TikTok video metadata + media URLs. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTikTokVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/video/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok video transcript
+         * @description Spoken transcript for a TikTok video. 1 op.
+         */
+        post: operations["scrapeTikTokVideoTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/video/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok video comments
+         * @description Comments on a TikTok video. 1 op.
+         */
+        post: operations["scrapeTikTokVideoComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/search/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok user search
+         * @description Search TikTok users by keyword. 1 op.
+         */
+        post: operations["scrapeTikTokSearchUsers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/trending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok trending feed
+         * @description Trending feed by region. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTikTokTrending"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram profile
+         * @description Public Instagram profile + recent reels. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeInstagramProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/user/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram user posts
+         * @description Paginated posts for an Instagram profile. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeInstagramUserPosts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram post or reel
+         * @description Single Instagram post or reel + media URLs. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeInstagramPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/post/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram post comments
+         * @description Comments on an Instagram post or reel. 1 op.
+         */
+        post: operations["scrapeInstagramPostComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/user/reels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram user reels
+         * @description Paginated reels for an Instagram profile. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeInstagramUserReels"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X profile
+         * @description Public X/Twitter profile + stats. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTwitterProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/user-tweets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X user tweets
+         * @description Recent tweets for a handle. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTwitterUserTweets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/tweet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X tweet
+         * @description Single tweet + media. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeTwitterTweet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/tweet/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X tweet video transcript
+         * @description Transcript of the video in a tweet (when present). 1 op.
+         */
+        post: operations["scrapeTwitterTweetTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube channel
+         * @description YouTube channel info + stats. Provide handle or channel_id. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeYouTubeChannel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/channel-videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube channel videos
+         * @description Paginated videos for a channel. Provide handle or channel_id. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeYouTubeChannelVideos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube video
+         * @description Single YouTube video info, including transcript. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeYouTubeVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/video/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube video comments
+         * @description Comments on a YouTube video. 1 op.
+         */
+        post: operations["scrapeYouTubeVideoComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Meta (Facebook) Ad Library
+         * @description Active Meta ads matching keyword. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeMetaAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Google Ad Transparency
+         * @description Ads for a company in the Google Ad Transparency Library. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeGoogleAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/linkedin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape LinkedIn Ad Library
+         * @description Active LinkedIn ads matching keyword. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeLinkedInAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/reddit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Reddit Ad Library
+         * @description Active Reddit ads matching keyword. 1 op + 1 op per staged media file when download_media is true.
+         */
+        post: operations["scrapeRedditAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1045,6 +1525,228 @@ export interface components {
             response: {
                 [key: string]: unknown;
             };
+        };
+        ScrapeResponse: {
+            /** @description Pass-through response from Scrape Creators. Shape varies per endpoint. When download_media was true, all media URLs are replaced with VidJutsu CDN URLs. */
+            data: unknown;
+        };
+        ScrapeTikTokProfileRequest: {
+            /** @description TikTok username (without @) */
+            handle: string;
+            /** @description Reduce response size by trimming large fields */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokProfileVideosRequest: {
+            /** @description TikTok username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokVideoRequest: {
+            /** @description TikTok video URL */
+            url: string;
+            /** @description Reduce response size */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokVideoTranscriptRequest: {
+            /** @description TikTok video URL */
+            url: string;
+        };
+        ScrapeTikTokVideoCommentsRequest: {
+            /** @description TikTok video URL */
+            url: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeTikTokSearchUsersRequest: {
+            /** @description Search query */
+            query: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeTikTokTrendingRequest: {
+            /** @description Two-letter ISO country code (e.g. 'us') */
+            country?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramProfileRequest: {
+            /** @description Instagram username (without @) */
+            handle: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramUserPostsRequest: {
+            /** @description Instagram username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramPostRequest: {
+            /** @description Instagram post or reel URL */
+            url: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramPostCommentsRequest: {
+            /** @description Instagram post URL */
+            url: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeInstagramUserReelsRequest: {
+            /** @description Instagram username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTwitterProfileRequest: {
+            /** @description X username (without @) */
+            handle: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTwitterUserTweetsRequest: {
+            /** @description X username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /** @description Reduce response size */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTwitterTweetRequest: {
+            /** @description Tweet URL or status URL */
+            url: string;
+            /** @description Reduce response size */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTwitterTweetTranscriptRequest: {
+            /** @description Tweet URL */
+            url: string;
+        };
+        ScrapeYouTubeChannelRequest: {
+            /** @description Channel handle, e.g. @MrBeast */
+            handle?: string;
+            /** @description Channel ID, e.g. UC... */
+            channel_id?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeYouTubeChannelVideosRequest: {
+            /** @description Channel handle */
+            handle?: string;
+            /** @description Channel ID */
+            channel_id?: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeYouTubeVideoRequest: {
+            /** @description YouTube video URL */
+            url: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeYouTubeVideoCommentsRequest: {
+            /** @description YouTube video URL */
+            url: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeMetaAdsRequest: {
+            /** @description Search keyword or page name */
+            query: string;
+            /** @description Two-letter ISO country (default: US) */
+            country?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeGoogleAdsRequest: {
+            /** @description Company / advertiser name */
+            company: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeLinkedInAdsRequest: {
+            /** @description Search keyword */
+            query: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeRedditAdsRequest: {
+            /** @description Search keyword */
+            query: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
         };
     };
     responses: never;
@@ -1912,6 +2614,582 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WatchResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokProfileVideos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokProfileVideosRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokVideoTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokVideoTranscriptRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokVideoComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokVideoCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokSearchUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokSearchUsersRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTikTokTrending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokTrendingRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeInstagramProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeInstagramUserPosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramUserPostsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeInstagramPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramPostRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeInstagramPostComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramPostCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeInstagramUserReels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramUserReelsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTwitterProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTwitterUserTweets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterUserTweetsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTwitterTweet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterTweetRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeTwitterTweetTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterTweetTranscriptRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeChannelRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeChannelVideos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeChannelVideosRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeVideoComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeVideoCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeMetaAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeMetaAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeGoogleAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeGoogleAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeLinkedInAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeLinkedInAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+        };
+    };
+    scrapeRedditAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeRedditAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
                 };
             };
         };
