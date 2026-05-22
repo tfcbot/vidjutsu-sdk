@@ -24,6 +24,7 @@ const main = defineCommand({
     transcribe: () => import("./commands/generated/transcribe").then((m) => m.default),
     overlay: () => import("./commands/generated/overlay").then((m) => m.default),
     compliance: () => import("./commands/generated/compliance").then((m) => m.default),
+    scrape: () => import("./commands/generated/scrape").then((m) => m.default),
     account: () => import("./commands/generated/account").then((m) => m.default),
     post: () => import("./commands/generated/post").then((m) => m.default),
     asset: () => import("./commands/generated/asset").then((m) => m.default),
