@@ -26,14 +26,14 @@ import { createClient } from "vidjutsu";
 
 const vj = createClient();
 
-// Watch — AI analyzes a video and answers your prompt (10 credits)
+// Watch — AI analyzes a video and answers your prompt (50/day)
 const { data: watch } = await vj.watchMedia({
   mediaUrl: "https://cdn.example.com/video.mp4",
   prompt: "Is the hook strong enough for fitness TikTok?",
 });
 console.log(watch.response);
 
-// Extract — pull frames, audio, and metadata (5 credits)
+// Extract — pull frames, audio, and metadata (100/day)
 const { data: extract } = await vj.extractMedia({
   mediaUrl: "https://cdn.example.com/video.mp4",
   frames: "auto",
@@ -41,13 +41,13 @@ const { data: extract } = await vj.extractMedia({
 });
 console.log(extract.frames, extract.metadata);
 
-// Transcribe — speech-to-text with word-level timing (10 credits)
+// Transcribe — speech-to-text with word-level timing (30/day)
 const { data: transcript } = await vj.transcribeMedia({
   mediaUrl: "https://cdn.example.com/video.mp4",
 });
 console.log(transcript.transcript, transcript.words);
 
-// Overlay — burn text onto video (5 credits)
+// Overlay — burn text onto video (50/day)
 const { data: overlay } = await vj.createOverlay({
   videoUrl: "https://cdn.example.com/video.mp4",
   text: "Follow for more tips",
@@ -77,17 +77,19 @@ const vj = createClient({ baseUrl: "https://staging.api.vidjutsu.ai" });
 
 ## All methods
 
-### Video intelligence (paid)
+### Video intelligence (metered)
 
-| Method | Credits | Description |
-|--------|---------|-------------|
-| `watchMedia(body)` | 10 | AI watches a video/image and answers your prompt |
-| `extractMedia(body)` | 5 | Extract frames, audio, and metadata from video |
-| `transcribeMedia(body)` | 10 | Speech-to-text with word-level timing |
-| `checkSpec(body)` | 5 | Validate a VidLang spec against rules |
-| `createOverlay(body)` | 5 | Burn text overlay onto video |
+Requires an active subscription. Each endpoint has its own daily rate limit (fixed window, resets 00:00 UTC). Hitting a limit returns HTTP 429 with a `retryAfter` hint.
 
-### Resources (free)
+| Method | Daily limit | Description |
+|--------|-------------|-------------|
+| `watchMedia(body)` | 50 / day | AI watches a video/image and answers your prompt |
+| `extractMedia(body)` | 100 / day | Extract frames, audio, and metadata from video |
+| `transcribeMedia(body)` | 30 / day | Speech-to-text with word-level timing |
+| `checkSpec(body)` | 100 / day | Validate a VidLang spec against rules |
+| `createOverlay(body)` | 50 / day | Burn text overlay onto video |
+
+### Resources (unmetered)
 
 | Method | Description |
 |--------|-------------|
@@ -96,7 +98,6 @@ const vj = createClient({ baseUrl: "https://staging.api.vidjutsu.ai" });
 | `createAsset(body)` / `updateAsset(body, query)` / `listOrGetAssets(query)` / `deleteAsset(query)` | Manage assets |
 | `createReference(body)` / `updateReference(body, query)` / `listOrGetReferences(query)` / `deleteReference(query)` | Manage references |
 | `uploadFile(body)` / `uploadFromUrl(body)` | Upload media to CDN |
-| `getBalance()` | Check credit balance |
 
 ### Utilities (free)
 
@@ -115,17 +116,18 @@ const vj = createClient({ baseUrl: "https://staging.api.vidjutsu.ai" });
 Every method returns the `openapi-fetch` response shape: `{ data, error, response }`. For endpoints not covered by convenience methods, use the raw client:
 
 ```ts
-const { data, error } = await vj.api.GET("/v1/balance");
+const { data, error } = await vj.api.GET("/v1/usage");
 const { data, error } = await vj.api.POST("/v1/watch", {
   body: { mediaUrl: "...", prompt: "..." },
 });
 ```
 
-## Credits & billing
+## Pricing & billing
 
-- **$99/month** — 1,000 credits included
-- **Extra credits** — $0.10 each
-- No overage charges — API returns 402 when credits run out
+- **$99/month flat** — full API access via Stripe, billed monthly, cancel anytime.
+- **No credits, no metered billing, no top-ups** — usage is governed by per-endpoint daily rate limits (reset 00:00 UTC), not a credit balance.
+- Hitting a daily limit returns **HTTP 429** with a `retryAfter` hint. Check remaining capacity with `getUsage()` or `GET /v1/usage`.
+- `GET /v1/pricing` is the single source of truth for current price and limits.
 
 ## Links
 
