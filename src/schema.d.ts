@@ -79,6 +79,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/auth/agent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent registration (auth.md)
+         * @description Register a machine client per the auth.md protocol. Two identity types are supported: `anonymous` (returns an API key immediately with pre-claim scopes) and `verified_email` (kicks off OTP, returns only a claim_token). Both flows are user-claimed — the agent and user run the entire ceremony with no agent-provider participation required.
+         */
+        post: operations["signupAgent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/agent/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Initiate claim flow
+         * @description Initiate the email-verification claim flow for a previously-issued anonymous registration. Sends a 6-digit OTP to the supplied email and returns a claim_attempt_id.
+         */
+        post: operations["agentClaim"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/agent/claim/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete claim flow
+         * @description Complete the email-verification claim flow by submitting the OTP. On success the registration's claimStatus flips to email_verified, post-claim scopes are unlocked, and a freshly-rotated API key is returned. The original pre-claim `vj_anon_*` key is invalidated server-side as a hygiene measure — agents MUST swap it for the new credential.
+         */
+        post: operations["agentClaimComplete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/agent/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke credential
+         * @description Revoke a previously-issued credential. Accepts a logout JWT body (application/logout+jwt) for future provider-driven revocation; currently a no-op receiver, returns 200.
+         */
+        post: operations["agentRevoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/verify/confirm": {
         parameters: {
             query?: never;
@@ -130,7 +210,7 @@ export interface paths {
         put?: never;
         /**
          * Check spec
-         * @description Validate a VidLang spec against enabled rules. Rules are off by default — caller must enable at least one. 5 credits.
+         * @description Validate a VidLang spec against enabled rules. Rules are off by default — caller must enable at least one. Daily limit: 100/day (resets 00:00 UTC).
          */
         post: operations["checkSpec"];
         delete?: never;
@@ -148,15 +228,75 @@ export interface paths {
         };
         /**
          * Get check rules
-         * @description Load per-client custom rules. 0 credits.
+         * @description Load per-client custom rules. Unmetered — no daily limit.
          */
         get: operations["getCheckRules"];
         /**
          * Update check rules
-         * @description Save per-client custom rules. 0 credits.
+         * @description Save per-client custom rules. Unmetered — no daily limit.
          */
         put: operations["updateCheckRules"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clips/broll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a B-roll-treated clip artifact
+         * @description Creates a new immutable clip whose parent is the input clip. Assets, edit planning, and render providers remain internal.
+         */
+        post: operations["addClipBroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clips/captions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a captioned clip artifact
+         * @description Creates a new immutable clip whose parent is the input clip.
+         */
+        post: operations["addClipCaptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clips/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate a bounded batch of 9:16 clips from a video source or video ID
+         * @description One semantic job may resolve the source, transcribe it, find moments, and reframe clips. Returns a durable job; provider and model choices remain internal.
+         */
+        post: operations["generateClips"];
         delete?: never;
         options?: never;
         head?: never;
@@ -210,7 +350,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Check checkout status */
+        /**
+         * Check checkout status
+         * @description Poll after starting a /v1/subscribe checkout. Once payment completes, returns the minted API key and clientId. (The /v1/credits route prefix is historical; this endpoint retrieves the subscription key, not a credit balance.)
+         */
         get: operations["getCheckoutStatus"];
         put?: never;
         post?: never;
@@ -231,9 +374,43 @@ export interface paths {
         put?: never;
         /**
          * Burn fine-print disclaimer onto video
-         * @description Burns a fine-print disclaimer centered at the bottom of a video using FFmpeg ASS subtitles. Use for FTC-style disclosures like results-not-typical, paid-endorsement, or AI-generated labels. Returns CDN URL of the result. 5 credits.
+         * @description Burns a fine-print disclaimer centered at the bottom of a video using FFmpeg ASS subtitles. Use for FTC-style disclosures like results-not-typical, paid-endorsement, or AI-generated labels. Returns CDN URL of the result. Daily limit: 50/day (resets 00:00 UTC).
          */
         post: operations["createDisclaimer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/distribution/clips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List generated clips or get one by ID */
+        get: operations["listOrGetDistributionClips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/distribution/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect a distribution job */
+        get: operations["getDistributionJob"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -251,7 +428,7 @@ export interface paths {
         put?: never;
         /**
          * Extract from media
-         * @description Pull frames, audio, and metadata from a video via server-side processing. 5 credits.
+         * @description Pull frames, audio, and metadata from a video via server-side processing. Daily limit: 100/day (resets 00:00 UTC).
          */
         post: operations["extractMedia"];
         delete?: never;
@@ -288,7 +465,7 @@ export interface paths {
         put?: never;
         /**
          * Burn text overlay onto video
-         * @description Burns text overlay onto a video using FFmpeg ASS subtitles. Supports TikTok-safe zones, configurable font size, stroke thickness, and top/center/bottom positioning. Returns CDN URL of the result. 5 credits.
+         * @description Burns text overlay onto a video using FFmpeg ASS subtitles. Supports TikTok-safe zones, configurable font size, stroke thickness, and top/center/bottom positioning. Returns CDN URL of the result. Daily limit: 50/day (resets 00:00 UTC).
          */
         post: operations["createOverlay"];
         delete?: never;
@@ -337,6 +514,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List projects or get by ID
+         * @description Returns a single project if ?id= is provided, or a list. Filter by ?status= or ?tag.key=value.
+         */
+        get: operations["listOrGetEditorProjects"];
+        /** Update editor project */
+        put: operations["updateEditorProject"];
+        /** Create editor project */
+        post: operations["createEditorProject"];
+        /** Archive editor project (soft) */
+        delete: operations["deleteEditorProject"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/references": {
         parameters: {
             query?: never;
@@ -360,6 +560,486 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/scrape/ads/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Google Ad Transparency
+         * @description Ads for a company in the Google Ad Transparency Library. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeGoogleAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/linkedin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape LinkedIn Ad Library
+         * @description Active LinkedIn ads matching keyword. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeLinkedInAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Meta (Facebook) Ad Library
+         * @description Active Meta ads matching keyword. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeMetaAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/ads/reddit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Reddit Ad Library
+         * @description Active Reddit ads matching keyword. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeRedditAds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/post": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram post or reel
+         * @description Single Instagram post or reel + media URLs. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeInstagramPost"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/post/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram post comments
+         * @description Comments on an Instagram post or reel. 1 op.
+         */
+        post: operations["scrapeInstagramPostComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram profile
+         * @description Public Instagram profile + recent reels. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeInstagramProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/user/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram user posts
+         * @description Paginated posts for an Instagram profile. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeInstagramUserPosts"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/instagram/user/reels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape Instagram user reels
+         * @description Paginated reels for an Instagram profile. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeInstagramUserReels"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok profile
+         * @description Fetch public TikTok profile data via Scrape Creators. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTikTokProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/profile/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok profile videos
+         * @description Paginated videos for a TikTok profile. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTikTokProfileVideos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/search/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok user search
+         * @description Search TikTok users by keyword. 1 op.
+         */
+        post: operations["scrapeTikTokSearchUsers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/trending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok trending feed
+         * @description Trending feed by region. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTikTokTrending"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok video
+         * @description Single TikTok video metadata + media URLs. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTikTokVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/video/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok video comments
+         * @description Comments on a TikTok video. 1 op.
+         */
+        post: operations["scrapeTikTokVideoComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/tiktok/video/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape TikTok video transcript
+         * @description Spoken transcript for a TikTok video. 1 op.
+         */
+        post: operations["scrapeTikTokVideoTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X profile
+         * @description Public X/Twitter profile + stats. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTwitterProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/tweet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X tweet
+         * @description Single tweet + media. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTwitterTweet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/tweet/transcript": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X tweet video transcript
+         * @description Transcript of the video in a tweet (when present). 1 op.
+         */
+        post: operations["scrapeTwitterTweetTranscript"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/twitter/user-tweets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape X user tweets
+         * @description Recent tweets for a handle. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeTwitterUserTweets"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/channel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube channel
+         * @description YouTube channel info + stats. Provide handle or channel_id. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeYouTubeChannel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/channel-videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube channel videos
+         * @description Paginated videos for a channel. Provide handle or channel_id. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeYouTubeChannelVideos"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube video
+         * @description Single YouTube video info, including transcript. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         */
+        post: operations["scrapeYouTubeVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/scrape/youtube/video/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Scrape YouTube video comments
+         * @description Comments on a YouTube video. 1 op.
+         */
+        post: operations["scrapeYouTubeVideoComments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscribe": {
         parameters: {
             query?: never;
@@ -369,7 +1049,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create subscription */
+        /**
+         * Create subscription
+         * @description Starts a Stripe Checkout session for the flat $99/mo subscription. Returns the hosted checkout `url` and a `claimToken`. After payment, poll GET /v1/credits/status with the session id to retrieve the minted API key. An active subscription is required for all gated intelligence endpoints; calls without one return 403 subscription_required.
+         */
         post: operations["createSubscription"];
         delete?: never;
         options?: never;
@@ -388,7 +1071,7 @@ export interface paths {
         put?: never;
         /**
          * Transcribe media
-         * @description Speech-to-text with word-level timing. 10 credits.
+         * @description Speech-to-text with word-level timing. Daily limit: 30/day (resets 00:00 UTC).
          */
         post: operations["transcribeMedia"];
         delete?: never;
@@ -451,6 +1134,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/videos/add": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a video from an uploaded asset, direct MP4 URL, or YouTube URL
+         * @description Creates or reuses a normalized Vidjutsu video. Provider ingest, downloading, indexing, and storage are implementation details.
+         */
+        post: operations["addVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/watch": {
         parameters: {
             query?: never;
@@ -462,489 +1165,9 @@ export interface paths {
         put?: never;
         /**
          * Watch media
-         * @description AI watches a video or image and answers your freeform prompt. Returns structured JSON. 10 credits.
+         * @description AI watches a video or image and answers your freeform prompt. Returns structured JSON. Daily limit: 50/day (resets 00:00 UTC).
          */
         post: operations["watchMedia"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok profile
-         * @description Fetch public TikTok profile data via Scrape Creators. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTikTokProfile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/profile/videos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok profile videos
-         * @description Paginated videos for a TikTok profile. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTikTokProfileVideos"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/video": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok video
-         * @description Single TikTok video metadata + media URLs. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTikTokVideo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/video/transcript": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok video transcript
-         * @description Spoken transcript for a TikTok video. 1 op.
-         */
-        post: operations["scrapeTikTokVideoTranscript"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/video/comments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok video comments
-         * @description Comments on a TikTok video. 1 op.
-         */
-        post: operations["scrapeTikTokVideoComments"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/search/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok user search
-         * @description Search TikTok users by keyword. 1 op.
-         */
-        post: operations["scrapeTikTokSearchUsers"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/tiktok/trending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape TikTok trending feed
-         * @description Trending feed by region. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTikTokTrending"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/instagram/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Instagram profile
-         * @description Public Instagram profile + recent reels. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeInstagramProfile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/instagram/user/posts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Instagram user posts
-         * @description Paginated posts for an Instagram profile. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeInstagramUserPosts"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/instagram/post": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Instagram post or reel
-         * @description Single Instagram post or reel + media URLs. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeInstagramPost"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/instagram/post/comments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Instagram post comments
-         * @description Comments on an Instagram post or reel. 1 op.
-         */
-        post: operations["scrapeInstagramPostComments"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/instagram/user/reels": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Instagram user reels
-         * @description Paginated reels for an Instagram profile. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeInstagramUserReels"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/twitter/profile": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape X profile
-         * @description Public X/Twitter profile + stats. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTwitterProfile"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/twitter/user-tweets": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape X user tweets
-         * @description Recent tweets for a handle. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTwitterUserTweets"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/twitter/tweet": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape X tweet
-         * @description Single tweet + media. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeTwitterTweet"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/twitter/tweet/transcript": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape X tweet video transcript
-         * @description Transcript of the video in a tweet (when present). 1 op.
-         */
-        post: operations["scrapeTwitterTweetTranscript"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/youtube/channel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape YouTube channel
-         * @description YouTube channel info + stats. Provide handle or channel_id. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeYouTubeChannel"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/youtube/channel-videos": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape YouTube channel videos
-         * @description Paginated videos for a channel. Provide handle or channel_id. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeYouTubeChannelVideos"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/youtube/video": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape YouTube video
-         * @description Single YouTube video info, including transcript. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeYouTubeVideo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/youtube/video/comments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape YouTube video comments
-         * @description Comments on a YouTube video. 1 op.
-         */
-        post: operations["scrapeYouTubeVideoComments"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/ads/meta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Meta (Facebook) Ad Library
-         * @description Active Meta ads matching keyword. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeMetaAds"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/ads/google": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Google Ad Transparency
-         * @description Ads for a company in the Google Ad Transparency Library. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeGoogleAds"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/ads/linkedin": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape LinkedIn Ad Library
-         * @description Active LinkedIn ads matching keyword. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeLinkedInAds"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/scrape/ads/reddit": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Scrape Reddit Ad Library
-         * @description Active Reddit ads matching keyword. 1 op + 1 op per staged media file when download_media is true.
-         */
-        post: operations["scrapeRedditAds"];
         delete?: never;
         options?: never;
         head?: never;
@@ -986,8 +1209,6 @@ export interface components {
             id: string;
             /** @enum {string} */
             status: "draft";
-            /** @enum {number} */
-            creditsCharged: 0;
         };
         AccountDeleteResponse: {
             id: string;
@@ -1013,6 +1234,113 @@ export interface components {
             /** @enum {boolean} */
             updated: true;
         };
+        AddBrollRequest: {
+            clipId: string;
+            mode: components["schemas"]["BrollMode"];
+            /** @description Optional approved asset IDs. Required when mode is supplied. */
+            assetIds?: string[];
+            intent?: string;
+            dryRun?: boolean;
+        };
+        AddCaptionsRequest: {
+            clipId: string;
+            preset?: string;
+            language?: string;
+            dryRun?: boolean;
+        };
+        AddVideoRequest: {
+            source: components["schemas"]["VideoSource"];
+            /** @description Customer attests that they own or are authorized to transform and distribute this source. */
+            rightsAttested: boolean;
+            dryRun?: boolean;
+        };
+        AgentClaimCompleteRequest: {
+            claim_token: string;
+            /** @description 6-digit verification code emailed to the principal. */
+            code: string;
+        };
+        AgentClaimCompleteResponse: {
+            /** @description Freshly-rotated API key. For anonymous registrations the original `vj_anon_*` key returned at signup is now invalid; agents MUST replace it with this value. */
+            credential: string;
+            /** @enum {string} */
+            credential_type: "api_key";
+            /** Format: int64 */
+            credential_expires?: number;
+            scopes: string[];
+        };
+        AgentClaimRequest: {
+            /** @description Opaque claim_token returned from the initial /v1/auth/agent call. */
+            claim_token: string;
+            /** @description Email address to send the verification code to. */
+            email: string;
+        };
+        AgentClaimResponse: {
+            registration_id: string;
+            /** @description Identifier for this claim attempt. */
+            claim_attempt_id: string;
+            /** @enum {string} */
+            status: "initiated";
+            /**
+             * Format: int64
+             * @description Unix epoch ms when this claim attempt expires.
+             */
+            expires_at: number;
+        };
+        AgentRevokeResponse: {
+            revoked: boolean;
+        };
+        AgentSignupAnonymousBody: {
+            /** @enum {string} */
+            type: "anonymous";
+            /**
+             * @description Requested credential type. Currently only api_key is supported.
+             * @enum {string}
+             */
+            requested_credential_type?: "api_key";
+        };
+        AgentSignupBody: components["schemas"]["AgentSignupAnonymousBody"] | components["schemas"]["AgentSignupVerifiedEmailBody"];
+        AgentSignupResponse: {
+            /** @description Server-generated registration id (rgn_...). */
+            registration_id: string;
+            /**
+             * @description How the registration was initiated.
+             * @enum {string}
+             */
+            registration_type: "anonymous" | "email-verification";
+            /**
+             * @description Credential type returned, when issued immediately. Omitted on flows that require claim_token first.
+             * @enum {string}
+             */
+            credential_type?: "api_key";
+            /** @description Live credential (API key) issued by the server, when one is issued immediately. */
+            credential?: string;
+            /**
+             * Format: int64
+             * @description Unix epoch ms when the credential expires, or null/undefined for non-expiring keys.
+             */
+            credential_expires?: number;
+            /** @description Scopes the credential is authorized for at issue time. */
+            scopes?: string[];
+            /** @description Scopes that will be added after the claim flow completes. */
+            post_claim_scopes?: string[];
+            /** @description URL the agent should direct the principal to in order to complete claim/verification. */
+            claim_url?: string;
+            /** @description Opaque token used to complete the claim flow. */
+            claim_token?: string;
+            /**
+             * Format: int64
+             * @description Unix epoch ms when the claim_token expires.
+             */
+            claim_token_expires?: number;
+        };
+        AgentSignupVerifiedEmailBody: {
+            /** @enum {string} */
+            type: "identity_assertion";
+            /** @enum {string} */
+            assertion_type: "verified_email";
+            /** @description Email address the agent asserts on behalf of the principal. */
+            assertion: string;
+        };
         ApiError: {
             error: string;
             message: string;
@@ -1034,8 +1362,6 @@ export interface components {
             status: "pending" | "completed";
             apiKey?: string;
             clientId?: string;
-            /** Format: int32 */
-            balance?: number;
             isNew?: boolean;
         };
         Asset: {
@@ -1095,6 +1421,11 @@ export interface components {
             /** @enum {boolean} */
             updated: true;
         };
+        AssetVideoSource: {
+            /** @enum {string} */
+            kind: "asset";
+            assetId: string;
+        };
         BearerAuth: {
             /**
              * @description Http authentication
@@ -1107,6 +1438,8 @@ export interface components {
              */
             scheme: "bearer";
         };
+        /** @enum {string} */
+        BrollMode: "auto" | "supplied" | "none";
         CheckRequest: {
             /** @description VidLang spec JSON to validate */
             spec: {
@@ -1134,6 +1467,32 @@ export interface components {
         CheckRulesUpdateRequest: {
             rules: string[];
         };
+        Clip: {
+            clipId: string;
+            rootVideoId: string;
+            parentClipId?: string;
+            transformKind: components["schemas"]["ClipTransformKind"];
+            status: components["schemas"]["ClipStatus"];
+            /** @enum {string} */
+            aspectRatio: "9:16";
+            /** Format: double */
+            durationSeconds?: number;
+            assetId?: string;
+            /** Format: uri */
+            url?: string;
+            /** Format: int64 */
+            createdAt: number;
+        };
+        ClipListResponse: {
+            data: components["schemas"]["Clip"][];
+        };
+        ClipResponse: {
+            data: components["schemas"]["Clip"];
+        };
+        /** @enum {string} */
+        ClipStatus: "processing" | "ready" | "failed";
+        /** @enum {string} */
+        ClipTransformKind: "generated" | "timestamps" | "captions" | "broll";
         ComplianceCheckResponse: {
             /**
              * Format: int32
@@ -1212,37 +1571,9 @@ export interface components {
             citation: components["schemas"]["ComplianceCitation"];
             evidence: components["schemas"]["ComplianceEvidence"];
         };
-        CreditCosts: {
-            /**
-             * Format: int32
-             * @description Create account (free)
-             */
-            "accounts.create": number;
-            /**
-             * Format: int32
-             * @description Create post (free)
-             */
-            "posts.create": number;
-            /**
-             * Format: int32
-             * @description Watch media via Gemini
-             */
-            watch: number;
-            /**
-             * Format: int32
-             * @description Extract frames/audio/metadata
-             */
-            extract: number;
-            /**
-             * Format: int32
-             * @description Transcribe speech to text
-             */
-            transcribe: number;
-            /**
-             * Format: int32
-             * @description Check spec against rules
-             */
-            check: number;
+        /** @description Per-endpoint daily request limits, keyed by endpoint name (fixed window, resets 00:00 UTC). */
+        DailyLimits: {
+            [key: string]: number;
         };
         DisclaimerRequest: {
             /** @description URL of the source video */
@@ -1260,6 +1591,88 @@ export interface components {
             id: string;
             /** @description CDN URL of the disclaimed video */
             resultUrl: string;
+        };
+        DistributionJob: {
+            jobId: string;
+            operation: components["schemas"]["DistributionJobOperation"];
+            status: components["schemas"]["DistributionJobStatus"];
+            outputs?: components["schemas"]["JobOutputResource"][];
+            error?: components["schemas"]["DistributionJobError"];
+            /** Format: int64 */
+            createdAt: number;
+            /** Format: int64 */
+            completedAt?: number;
+        };
+        DistributionJobError: {
+            code: string;
+            message: string;
+            retryable: boolean;
+        };
+        /** @enum {string} */
+        DistributionJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost";
+        /** @enum {string} */
+        DistributionJobStatus: "queued" | "running" | "completed" | "failed" | "cancelled";
+        EditorProject: {
+            projectId: string;
+            clientId: string;
+            name: string;
+            /**
+             * @description The serializable timeline document (Twick ProjectJSON: tracks, assets,
+             *     metadata, version). Stored opaquely; the editor owns its shape.
+             */
+            project?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["Tag"][];
+            metadata?: {
+                [key: string]: unknown;
+            };
+            status: components["schemas"]["EditorProjectStatus"];
+            /** Format: int64 */
+            createdAt: number;
+            /** Format: int64 */
+            updatedAt: number;
+        };
+        EditorProjectCreateRequest: {
+            name: string;
+            project?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["Tag"][];
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        EditorProjectCreateResponse: {
+            id: string;
+            /** @enum {string} */
+            status: "draft";
+        };
+        EditorProjectDeleteResponse: {
+            id: string;
+            /** @enum {string} */
+            status: "archived";
+        };
+        EditorProjectListResponse: {
+            data: components["schemas"]["EditorProject"][];
+        };
+        /** @enum {string} */
+        EditorProjectStatus: "draft" | "active" | "archived";
+        EditorProjectUpdateRequest: {
+            name?: string;
+            status?: components["schemas"]["EditorProjectStatus"];
+            project?: {
+                [key: string]: unknown;
+            };
+            tags?: components["schemas"]["Tag"][];
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        EditorProjectUpdateResponse: {
+            projectId: string;
+            /** @enum {boolean} */
+            updated: true;
         };
         ExtractAudio: {
             url: string;
@@ -1296,6 +1709,30 @@ export interface components {
             audio?: components["schemas"]["ExtractAudio"];
             metadata?: components["schemas"]["ExtractMetadata"];
         };
+        GenerateClipsRequest: {
+            /** @description Provide source or videoId. Exactly one is required. */
+            source?: Omit<components["schemas"]["VideoSource"], "kind">;
+            /** @description Existing normalized Vidjutsu video. Provide this or source, not both. */
+            videoId?: string;
+            /** @enum {string} */
+            aspectRatio: "9:16";
+            /** Format: int32 */
+            count: number;
+            /** Format: int32 */
+            minDurationSeconds?: number;
+            /** Format: int32 */
+            maxDurationSeconds?: number;
+            intent?: string;
+            /** @description Required when source is supplied. */
+            rightsAttested?: boolean;
+            dryRun?: boolean;
+        };
+        HttpVideoSource: {
+            /** @enum {string} */
+            kind: "http";
+            /** Format: uri */
+            url: string;
+        };
         InfoResponse: {
             name: string;
             version: string;
@@ -1303,7 +1740,13 @@ export interface components {
                 [key: string]: string;
             };
             auth: unknown;
-            credits: components["schemas"]["CreditCosts"];
+            /** @description Per-endpoint daily request limits (fixed window, resets 00:00 UTC). */
+            dailyLimits: components["schemas"]["DailyLimits"];
+        };
+        JobOutputResource: {
+            /** @enum {string} */
+            kind: "video" | "clip" | "post";
+            id: string;
         };
         OverlayRequest: {
             /** @description URL of the source video */
@@ -1357,8 +1800,6 @@ export interface components {
             id: string;
             /** @enum {string} */
             status: "draft";
-            /** @enum {number} */
-            creditsCharged: 0;
         };
         PostDeleteResponse: {
             id: string;
@@ -1385,10 +1826,13 @@ export interface components {
         };
         PricingResponse: {
             subscription: components["schemas"]["SubscriptionInfo"];
-            pricePerCredit: string;
-            /** Format: int32 */
+            /**
+             * Format: int32
+             * @description Maximum managed accounts per subscription.
+             */
             maxAccounts: number;
-            costs: components["schemas"]["CreditCosts"];
+            /** @description Per-endpoint daily request limits (fixed window, resets 00:00 UTC). */
+            dailyLimits: components["schemas"]["DailyLimits"];
         };
         Reference: {
             referenceId: string;
@@ -1414,8 +1858,6 @@ export interface components {
             id: string;
             /** @enum {string} */
             status: "active";
-            /** @enum {number} */
-            creditsCharged: 0;
         };
         ReferenceDeleteResponse: {
             id: string;
@@ -1437,6 +1879,228 @@ export interface components {
             /** @enum {boolean} */
             updated: true;
         };
+        ScrapeGoogleAdsRequest: {
+            /** @description Company / advertiser name */
+            company: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramPostCommentsRequest: {
+            /** @description Instagram post URL */
+            url: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeInstagramPostRequest: {
+            /** @description Instagram post or reel URL */
+            url: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramProfileRequest: {
+            /** @description Instagram username (without @) */
+            handle: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramUserPostsRequest: {
+            /** @description Instagram username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeInstagramUserReelsRequest: {
+            /** @description Instagram username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeLinkedInAdsRequest: {
+            /** @description Search keyword */
+            query: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeMetaAdsRequest: {
+            /** @description Search keyword or page name */
+            query: string;
+            /** @description Two-letter ISO country (default: US) */
+            country?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeRedditAdsRequest: {
+            /** @description Search keyword */
+            query: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeResponse: {
+            /** @description Pass-through response from Scrape Creators. Shape varies per endpoint. When download_media was true, all media URLs are replaced with VidJutsu CDN URLs. */
+            data: unknown;
+        };
+        ScrapeTikTokProfileRequest: {
+            /** @description TikTok username (without @) */
+            handle: string;
+            /** @description Reduce response size by trimming large fields */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokProfileVideosRequest: {
+            /** @description TikTok username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokSearchUsersRequest: {
+            /** @description Search query */
+            query: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeTikTokTrendingRequest: {
+            /** @description Two-letter ISO country code (e.g. 'us') */
+            country?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokVideoCommentsRequest: {
+            /** @description TikTok video URL */
+            url: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeTikTokVideoRequest: {
+            /** @description TikTok video URL */
+            url: string;
+            /** @description Reduce response size */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTikTokVideoTranscriptRequest: {
+            /** @description TikTok video URL */
+            url: string;
+        };
+        ScrapeTwitterProfileRequest: {
+            /** @description X username (without @) */
+            handle: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTwitterTweetRequest: {
+            /** @description Tweet URL or status URL */
+            url: string;
+            /** @description Reduce response size */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeTwitterTweetTranscriptRequest: {
+            /** @description Tweet URL */
+            url: string;
+        };
+        ScrapeTwitterUserTweetsRequest: {
+            /** @description X username */
+            handle: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /** @description Reduce response size */
+            trim?: boolean;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeYouTubeChannelRequest: {
+            /** @description Channel handle, e.g. @MrBeast */
+            handle?: string;
+            /** @description Channel ID, e.g. UC... */
+            channel_id?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeYouTubeChannelVideosRequest: {
+            /** @description Channel handle */
+            handle?: string;
+            /** @description Channel ID */
+            channel_id?: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
+        ScrapeYouTubeVideoCommentsRequest: {
+            /** @description YouTube video URL */
+            url: string;
+            /** @description Pagination cursor */
+            cursor?: string;
+        };
+        ScrapeYouTubeVideoRequest: {
+            /** @description YouTube video URL */
+            url: string;
+            /**
+             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
+             * @default false
+             */
+            download_media: boolean;
+        };
         SubscriptionCreateRequest: {
             email: string;
         };
@@ -1445,9 +2109,9 @@ export interface components {
             claimToken: string;
         };
         SubscriptionInfo: {
+            /** @description Flat subscription price, e.g. "$99/mo". */
             price: string;
-            /** Format: int32 */
-            includedCredits: number;
+            /** @description Whether an active subscription is required for gated endpoints. */
             required: boolean;
         };
         Tag: {
@@ -1514,6 +2178,24 @@ export interface components {
         VerifyRequestResponse: {
             sent: boolean;
         };
+        Video: {
+            videoId: string;
+            /** @enum {string} */
+            sourceKind: "asset" | "http" | "youtube";
+            status: components["schemas"]["VideoStatus"];
+            title?: string;
+            /** Format: double */
+            durationSeconds?: number;
+            fingerprint?: string;
+            /** Format: int64 */
+            createdAt: number;
+        };
+        VideoResponse: {
+            data: components["schemas"]["Video"];
+        };
+        VideoSource: components["schemas"]["AssetVideoSource"] | components["schemas"]["HttpVideoSource"] | components["schemas"]["YouTubeVideoSource"];
+        /** @enum {string} */
+        VideoStatus: "processing" | "ready" | "failed";
         WatchRequest: {
             /** @description URL of the media to analyze */
             mediaUrl: string;
@@ -1526,227 +2208,11 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        ScrapeResponse: {
-            /** @description Pass-through response from Scrape Creators. Shape varies per endpoint. When download_media was true, all media URLs are replaced with VidJutsu CDN URLs. */
-            data: unknown;
-        };
-        ScrapeTikTokProfileRequest: {
-            /** @description TikTok username (without @) */
-            handle: string;
-            /** @description Reduce response size by trimming large fields */
-            trim?: boolean;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTikTokProfileVideosRequest: {
-            /** @description TikTok username */
-            handle: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTikTokVideoRequest: {
-            /** @description TikTok video URL */
+        YouTubeVideoSource: {
+            /** @enum {string} */
+            kind: "youtube";
+            /** Format: uri */
             url: string;
-            /** @description Reduce response size */
-            trim?: boolean;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTikTokVideoTranscriptRequest: {
-            /** @description TikTok video URL */
-            url: string;
-        };
-        ScrapeTikTokVideoCommentsRequest: {
-            /** @description TikTok video URL */
-            url: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-        };
-        ScrapeTikTokSearchUsersRequest: {
-            /** @description Search query */
-            query: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-        };
-        ScrapeTikTokTrendingRequest: {
-            /** @description Two-letter ISO country code (e.g. 'us') */
-            country?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeInstagramProfileRequest: {
-            /** @description Instagram username (without @) */
-            handle: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeInstagramUserPostsRequest: {
-            /** @description Instagram username */
-            handle: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeInstagramPostRequest: {
-            /** @description Instagram post or reel URL */
-            url: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeInstagramPostCommentsRequest: {
-            /** @description Instagram post URL */
-            url: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-        };
-        ScrapeInstagramUserReelsRequest: {
-            /** @description Instagram username */
-            handle: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTwitterProfileRequest: {
-            /** @description X username (without @) */
-            handle: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTwitterUserTweetsRequest: {
-            /** @description X username */
-            handle: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-            /** @description Reduce response size */
-            trim?: boolean;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTwitterTweetRequest: {
-            /** @description Tweet URL or status URL */
-            url: string;
-            /** @description Reduce response size */
-            trim?: boolean;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeTwitterTweetTranscriptRequest: {
-            /** @description Tweet URL */
-            url: string;
-        };
-        ScrapeYouTubeChannelRequest: {
-            /** @description Channel handle, e.g. @MrBeast */
-            handle?: string;
-            /** @description Channel ID, e.g. UC... */
-            channel_id?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeYouTubeChannelVideosRequest: {
-            /** @description Channel handle */
-            handle?: string;
-            /** @description Channel ID */
-            channel_id?: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeYouTubeVideoRequest: {
-            /** @description YouTube video URL */
-            url: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeYouTubeVideoCommentsRequest: {
-            /** @description YouTube video URL */
-            url: string;
-            /** @description Pagination cursor */
-            cursor?: string;
-        };
-        ScrapeMetaAdsRequest: {
-            /** @description Search keyword or page name */
-            query: string;
-            /** @description Two-letter ISO country (default: US) */
-            country?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeGoogleAdsRequest: {
-            /** @description Company / advertiser name */
-            company: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeLinkedInAdsRequest: {
-            /** @description Search keyword */
-            query: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
-        };
-        ScrapeRedditAdsRequest: {
-            /** @description Search keyword */
-            query: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
     };
     responses: never;
@@ -1990,6 +2456,102 @@ export interface operations {
             };
         };
     };
+    signupAgent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentSignupBody"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentSignupResponse"];
+                };
+            };
+        };
+    };
+    agentClaim: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentClaimRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentClaimResponse"];
+                };
+            };
+        };
+    };
+    agentClaimComplete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentClaimCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentClaimCompleteResponse"];
+                };
+            };
+        };
+    };
+    agentRevoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/logout+jwt": string;
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentRevokeResponse"];
+                };
+            };
+        };
+    };
     confirmVerification: {
         parameters: {
             query?: never;
@@ -2060,6 +2622,25 @@ export interface operations {
                     "application/json": components["schemas"]["CheckResponse"];
                 };
             };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     getCheckRules: {
@@ -2106,6 +2687,111 @@ export interface operations {
             };
         };
     };
+    addClipBroll: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddBrollRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    addClipCaptions: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddCaptionsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    generateClips: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateClipsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     checkCompliancePrompt: {
         parameters: {
             query?: never;
@@ -2126,6 +2812,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ComplianceCheckResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2150,6 +2855,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ComplianceCheckResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2198,6 +2922,88 @@ export interface operations {
                     "application/json": components["schemas"]["DisclaimerResponse"];
                 };
             };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    listOrGetDistributionClips: {
+        parameters: {
+            query?: {
+                id?: string;
+                videoId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClipResponse"] | components["schemas"]["ClipListResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    getDistributionJob: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     extractMedia: {
@@ -2220,6 +3026,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExtractResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2264,6 +3089,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OverlayResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2383,6 +3227,101 @@ export interface operations {
             };
         };
     };
+    listOrGetEditorProjects: {
+        parameters: {
+            query?: {
+                id?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorProject"] | components["schemas"]["EditorProjectListResponse"];
+                };
+            };
+        };
+    };
+    updateEditorProject: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditorProjectUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorProjectUpdateResponse"];
+                };
+            };
+        };
+    };
+    createEditorProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditorProjectCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded and a new resource has been created as a result. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorProjectCreateResponse"];
+                };
+            };
+        };
+    };
+    deleteEditorProject: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorProjectDeleteResponse"];
+                };
+            };
+        };
+    };
     listOrGetReferences: {
         parameters: {
             query?: {
@@ -2478,6 +3417,1038 @@ export interface operations {
             };
         };
     };
+    scrapeGoogleAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeGoogleAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeLinkedInAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeLinkedInAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeMetaAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeMetaAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeRedditAds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeRedditAdsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeInstagramPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramPostRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeInstagramPostComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramPostCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeInstagramProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeInstagramUserPosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramUserPostsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeInstagramUserReels: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeInstagramUserReelsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokProfileVideos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokProfileVideosRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokSearchUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokSearchUsersRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokTrending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokTrendingRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokVideoComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokVideoCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTikTokVideoTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTikTokVideoTranscriptRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTwitterProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTwitterTweet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterTweetRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTwitterTweetTranscript: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterTweetTranscriptRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeTwitterUserTweets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeTwitterUserTweetsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeChannel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeChannelRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeChannelVideos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeChannelVideosRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    scrapeYouTubeVideoComments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScrapeYouTubeVideoCommentsRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScrapeResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     createSubscription: {
         parameters: {
             query?: never;
@@ -2524,6 +4495,25 @@ export interface operations {
                     "application/json": components["schemas"]["TranscribeResponse"];
                 };
             };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     uploadFile: {
@@ -2546,6 +4536,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UploadResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2572,6 +4581,25 @@ export interface operations {
                     "application/json": components["schemas"]["UploadResponse"];
                 };
             };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
         };
     };
     getUsage: {
@@ -2590,6 +4618,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsageResponse"];
+                };
+            };
+        };
+    };
+    addVideo: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2616,580 +4679,23 @@ export interface operations {
                     "application/json": components["schemas"]["WatchResponse"];
                 };
             };
-        };
-    };
-    scrapeTikTokProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokProfileRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
-        };
-    };
-    scrapeTikTokProfileVideos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokProfileVideosRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
                 headers: {
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTikTokVideo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokVideoRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTikTokVideoTranscript: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokVideoTranscriptRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTikTokVideoComments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokVideoCommentsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTikTokSearchUsers: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokSearchUsersRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTikTokTrending: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTikTokTrendingRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeInstagramProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeInstagramProfileRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeInstagramUserPosts: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeInstagramUserPostsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeInstagramPost: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeInstagramPostRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeInstagramPostComments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeInstagramPostCommentsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeInstagramUserReels: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeInstagramUserReelsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTwitterProfile: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTwitterProfileRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTwitterUserTweets: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTwitterUserTweetsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTwitterTweet: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTwitterTweetRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeTwitterTweetTranscript: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeTwitterTweetTranscriptRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeYouTubeChannel: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeYouTubeChannelRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeYouTubeChannelVideos: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeYouTubeChannelVideosRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeYouTubeVideo: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeYouTubeVideoRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeYouTubeVideoComments: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeYouTubeVideoCommentsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeMetaAds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeMetaAdsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeGoogleAds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeGoogleAdsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeLinkedInAds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeLinkedInAdsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
-                };
-            };
-        };
-    };
-    scrapeRedditAds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ScrapeRedditAdsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ScrapeResponse"];
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

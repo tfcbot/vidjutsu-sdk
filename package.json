@@ -28,6 +28,8 @@
     "build:binary:darwin-x64": "bun build src/cli/index.ts --compile --target=bun-darwin-x64 --outfile dist/vidjutsu-darwin-x64",
     "build:binary:linux-x64": "bun build src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/vidjutsu-linux-x64",
     "build:binary:linux-arm64": "bun build src/cli/index.ts --compile --target=bun-linux-arm64 --outfile dist/vidjutsu-linux-arm64",
+    "test:distribution": "bun scripts/test-distribution-client.ts",
+    "test:distribution:cli": "bun run build:cli && bun scripts/test-distribution-cli.ts",
     "dev": "bun run src/cli/index.ts",
     "prepublishOnly": "bun run generate && bun run build"
   },

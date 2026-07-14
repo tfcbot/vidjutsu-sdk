@@ -19,6 +19,8 @@ const main = defineCommand({
     admin: () => import("./commands/admin").then((m) => m.default),
     version: () => import("./commands/version").then((m) => m.default),
     update: () => import("./commands/update").then((m) => m.default),
+    clips: () => import("./commands/clips").then((m) => m.default),
+    jobs: () => import("./commands/jobs").then((m) => m.default),
 
     // --- Generated from OpenAPI spec ---
     watch: () => import("./commands/generated/watch").then((m) => m.default),
@@ -33,6 +35,7 @@ const main = defineCommand({
     reference: () => import("./commands/generated/reference").then((m) => m.default),
     usage: () => import("./commands/generated/usage").then((m) => m.default),
     info: () => import("./commands/generated/info").then((m) => m.default),
+    project: () => import("./commands/generated/project").then((m) => m.default),
   },
 });
 
