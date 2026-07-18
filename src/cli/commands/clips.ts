@@ -55,7 +55,6 @@ export default defineCommand({
             minDurationSeconds: optionalNumber(args.min),
             maxDurationSeconds: optionalNumber(args.max),
             intent: args.intent,
-            rightsAttested: source ? true : undefined,
             dryRun: dryRun(args),
           },
           { idempotencyKey: args["idempotency-key"] },
@@ -133,4 +132,3 @@ export default defineCommand({
     }),
   },
 });
-

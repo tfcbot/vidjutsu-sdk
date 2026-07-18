@@ -199,6 +199,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a reusable generated character */
+        post: operations["createCharacter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/check": {
         parameters: {
             query?: never;
@@ -297,6 +314,60 @@ export interface paths {
          * @description One semantic job may resolve the source, transcribe it, find moments, and reframe clips. Returns a durable job; provider and model choices remain internal.
          */
         post: operations["generateClips"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate whether a source video can be cloned reliably
+         * @description Starts a durable EVE-backed analysis job. The result contains a deterministic cloneability score grounded in prompted VidJutsu watch evidence.
+         */
+        post: operations["cloneCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/starting-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a clean character-swapped starting frame */
+        post: operations["cloneStartingImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clone source motion with Seedance or Kling motion control */
+        post: operations["cloneVideo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -446,6 +517,23 @@ export interface paths {
         };
         /** API info */
         get: operations["getInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect a durable VidJutsu media job */
+        get: operations["getJob"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1154,6 +1242,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/videos/download/instagram": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import an Instagram video into VidJutsu
+         * @description Imports the primary video from an Instagram post or reel into tenant-owned VidJutsu storage. Repeated imports reuse the same immutable asset.
+         */
+        post: operations["downloadInstagramVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/videos/download/tiktok": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a TikTok video into VidJutsu
+         * @description Imports the primary video from a TikTok post into tenant-owned VidJutsu storage. Repeated imports reuse the same immutable asset.
+         */
+        post: operations["downloadTikTokVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/watch": {
         parameters: {
             query?: never;
@@ -1250,8 +1378,6 @@ export interface components {
         };
         AddVideoRequest: {
             source: components["schemas"]["VideoSource"];
-            /** @description Customer attests that they own or are authorized to transform and distribute this source. */
-            rightsAttested: boolean;
             dryRun?: boolean;
         };
         AgentClaimCompleteRequest: {
@@ -1440,6 +1566,12 @@ export interface components {
         };
         /** @enum {string} */
         BrollMode: "auto" | "supplied" | "none";
+        CharacterResult: {
+            /** @enum {string} */
+            kind: "character";
+            characterId: string;
+            identityImageAssetId: string;
+        };
         CheckRequest: {
             /** @description VidLang spec JSON to validate */
             spec: {
@@ -1493,6 +1625,54 @@ export interface components {
         ClipStatus: "processing" | "ready" | "failed";
         /** @enum {string} */
         ClipTransformKind: "generated" | "timestamps" | "captions" | "broll";
+        CloneCheckEvidence: {
+            criterion: string;
+            observation: string;
+            timestamps: number[];
+        };
+        CloneCheckRequest: {
+            source: components["schemas"]["VideoSource"];
+            rubricVersion?: string;
+            dryRun?: boolean;
+        };
+        CloneCheckResult: {
+            /** @enum {string} */
+            kind: "clone_check";
+            checkId: string;
+            /** Format: int32 */
+            successPercent: number;
+            verdict: components["schemas"]["CloneCheckVerdict"];
+            evidence: components["schemas"]["CloneCheckEvidence"][];
+            failedCriteria: string[];
+            recommendedModel: components["schemas"]["VideoCloneModel"];
+            rubricVersion: string;
+        };
+        /** @enum {string} */
+        CloneCheckVerdict: "recommended" | "marginal" | "not_recommended";
+        CloneStartingImageRequest: {
+            source: components["schemas"]["VideoSource"];
+            characterId: string;
+            dryRun?: boolean;
+        };
+        CloneVideoRequest: {
+            source: components["schemas"]["VideoSource"];
+            startingImageAssetId: string;
+            model: components["schemas"]["VideoCloneModel"];
+            cloneCheckId: string;
+            override?: components["schemas"]["LowScoreOverride"];
+            dryRun?: boolean;
+        };
+        CloneVideoResult: {
+            /** @enum {string} */
+            kind: "clone_video";
+            assetId: string;
+            /** Format: uri */
+            url?: string;
+            model: components["schemas"]["VideoCloneModel"];
+            cloneCheckId: string;
+            /** Format: int32 */
+            qaScore?: number;
+        };
         ComplianceCheckResponse: {
             /**
              * Format: int32
@@ -1570,6 +1750,11 @@ export interface components {
             explanation: string;
             citation: components["schemas"]["ComplianceCitation"];
             evidence: components["schemas"]["ComplianceEvidence"];
+        };
+        CreateCharacterRequest: {
+            prompt: string;
+            referenceImageAssetIds?: string[];
+            dryRun?: boolean;
         };
         /** @description Per-endpoint daily request limits, keyed by endpoint name (fixed window, resets 00:00 UTC). */
         DailyLimits: {
@@ -1723,8 +1908,6 @@ export interface components {
             /** Format: int32 */
             maxDurationSeconds?: number;
             intent?: string;
-            /** @description Required when source is supplied. */
-            rightsAttested?: boolean;
             dryRun?: boolean;
         };
         HttpVideoSource: {
@@ -1745,9 +1928,37 @@ export interface components {
         };
         JobOutputResource: {
             /** @enum {string} */
-            kind: "video" | "clip" | "post";
+            kind: "video" | "clip" | "post" | "image" | "character" | "clone_check";
             id: string;
         };
+        LowScoreOverride: {
+            /** @enum {boolean} */
+            allowLowScore: true;
+            reason: string;
+        };
+        MediaJob: {
+            jobId: string;
+            parentJobId?: string;
+            operation: components["schemas"]["MediaJobOperation"];
+            status: components["schemas"]["MediaJobStatus"];
+            outputs?: components["schemas"]["JobOutputResource"][];
+            result?: components["schemas"]["MediaJobResult"];
+            error?: components["schemas"]["MediaJobError"];
+            /** Format: int64 */
+            createdAt: number;
+            /** Format: int64 */
+            completedAt?: number;
+        };
+        MediaJobError: {
+            code: string;
+            message: string;
+            retryable: boolean;
+        };
+        /** @enum {string} */
+        MediaJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost" | "cloneCheck" | "createCharacter" | "cloneStartingImage" | "cloneVideo";
+        MediaJobResult: components["schemas"]["CloneCheckResult"] | components["schemas"]["CharacterResult"] | components["schemas"]["StartingImageResult"] | components["schemas"]["CloneVideoResult"];
+        /** @enum {string} */
+        MediaJobStatus: "queued" | "running" | "completed" | "failed" | "cancelled";
         OverlayRequest: {
             /** @description URL of the source video */
             videoUrl: string;
@@ -2101,6 +2312,36 @@ export interface components {
              */
             download_media: boolean;
         };
+        SocialVideoDownloadRequest: {
+            /** Format: uri */
+            url: string;
+        };
+        SocialVideoDownloadResult: {
+            assetId: string;
+            /** Format: uri */
+            url: string;
+            platform: components["schemas"]["SocialVideoPlatform"];
+            externalId: string;
+            /** Format: uri */
+            sourceUrl: string;
+            /** @enum {string} */
+            contentType: "video/mp4";
+            /** Format: int64 */
+            size: number;
+            sha256: string;
+            reused: boolean;
+        };
+        /** @enum {string} */
+        SocialVideoPlatform: "tiktok" | "instagram";
+        StartingImageResult: {
+            /** @enum {string} */
+            kind: "starting_image";
+            assetId: string;
+            /** Format: uri */
+            url?: string;
+            characterId: string;
+            sourceFingerprint: string;
+        };
         SubscriptionCreateRequest: {
             email: string;
         };
@@ -2190,6 +2431,8 @@ export interface components {
             /** Format: int64 */
             createdAt: number;
         };
+        /** @enum {string} */
+        VideoCloneModel: "seedance" | "kling-motion-control";
         VideoResponse: {
             data: components["schemas"]["Video"];
         };
@@ -2600,6 +2843,41 @@ export interface operations {
             };
         };
     };
+    createCharacter: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCharacterRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     checkSpec: {
         parameters: {
             query?: never;
@@ -2779,6 +3057,111 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    cloneCheck: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    cloneStartingImage: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneStartingImageRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    cloneVideo: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaJob"];
                 };
             };
             /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
@@ -3065,6 +3448,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfoResponse"];
+                };
+            };
+        };
+    };
+    getJob: {
+        parameters: {
+            query: {
+                id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4649,6 +5063,92 @@ export interface operations {
             /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
             403: {
                 headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    downloadInstagramVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SocialVideoDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SocialVideoDownloadResult"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    downloadTikTokVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SocialVideoDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SocialVideoDownloadResult"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {

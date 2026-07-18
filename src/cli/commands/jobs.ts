@@ -2,11 +2,11 @@ import { defineCommand } from "citty";
 import { apiRequest } from "../client";
 
 async function getJob(jobId: string): Promise<any> {
-  return await apiRequest("GET", `/v1/distribution/jobs?id=${encodeURIComponent(jobId)}`);
+  return await apiRequest("GET", `/v1/jobs?id=${encodeURIComponent(jobId)}`);
 }
 
 export default defineCommand({
-  meta: { name: "jobs", description: "Inspect durable distribution jobs" },
+  meta: { name: "jobs", description: "Inspect durable VidJutsu media jobs" },
   subCommands: {
     get: defineCommand({
       meta: { name: "get", description: "Get a job" },
@@ -42,4 +42,3 @@ export default defineCommand({
     }),
   },
 });
-

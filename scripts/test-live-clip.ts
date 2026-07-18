@@ -65,7 +65,7 @@ try {
       "--max",
       "45",
       "--intent",
-      "Find one compelling standalone moment with a strong hook and a useful insight",
+      "Ignore the first two minutes and all introductory material. Find one compelling standalone moment later in the episode with a strong hook and a useful insight",
       "--rights-attested",
       "--execute",
       "--idempotency-key",

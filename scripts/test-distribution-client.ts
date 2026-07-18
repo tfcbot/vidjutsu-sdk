@@ -48,7 +48,6 @@ try {
       source: { kind: "youtube", url: "https://www.youtube.com/watch?v=Eg93po_DAYo" },
       aspectRatio: "9:16",
       count: 2,
-      rightsAttested: true,
       dryRun: true,
     },
     { idempotencyKey: "sdk-generate" },
