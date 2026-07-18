@@ -10,11 +10,13 @@ export default defineCommand({
     const id = args.id as string;
     let path: string;
 
-    if (id.startsWith("acc_")) path = `/v1/accounts?id=${id}`;
+    if (id.startsWith("job_")) path = `/v1/distribution/jobs?id=${id}`;
+    else if (id.startsWith("clip_")) path = `/v1/distribution/clips?id=${id}`;
+    else if (id.startsWith("acc_")) path = `/v1/accounts?id=${id}`;
     else if (id.startsWith("post_")) path = `/v1/posts?id=${id}`;
     else if (id.startsWith("ref_")) path = `/v1/references?id=${id}`;
     else {
-      console.error("Unknown ID prefix. Expected acc_, post_, or ref_");
+      console.error("Unknown ID prefix. Expected job_, clip_, acc_, post_, or ref_");
       process.exit(1);
     }
 

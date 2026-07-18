@@ -14,15 +14,20 @@ interface Config {
 const DEFAULT_API_URL = "https://api.vidjutsu.ai";
 
 function loadConfig(): Config {
+  const envApiUrl = process.env.VIDJUTSU_API_URL;
+  const envApiKey = process.env.VIDJUTSU_API_KEY;
   if (existsSync(CONFIG_FILE)) {
     const raw = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
     // Always use prod URL — ignore stale dev/preview URLs from testing
     if (!raw.apiUrl || raw.apiUrl.includes(".convex.site")) {
       raw.apiUrl = DEFAULT_API_URL;
     }
-    return raw;
+    return {
+      apiUrl: envApiUrl ?? raw.apiUrl,
+      apiKey: envApiKey ?? raw.apiKey,
+    };
   }
-  return { apiUrl: DEFAULT_API_URL };
+  return { apiUrl: envApiUrl ?? DEFAULT_API_URL, apiKey: envApiKey };
 }
 
 function saveConfig(config: Config) {
@@ -79,7 +84,8 @@ export async function publicRequest(
 export async function apiRequest(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  options: { idempotencyKey?: string } = {},
 ): Promise<unknown> {
   const config = loadConfig();
   if (!config.apiKey) {
@@ -92,6 +98,7 @@ export async function apiRequest(
   const headers: Record<string, string> = {
     "Authorization": `Bearer ${config.apiKey}`,
     "Content-Type": "application/json",
+    ...(options.idempotencyKey ? { "Idempotency-Key": options.idempotencyKey } : {}),
   };
 
   const res = await fetch(url, {
