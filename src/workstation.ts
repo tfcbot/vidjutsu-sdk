@@ -41,7 +41,6 @@ export interface GeneratedImageAsset {
 export interface MotionCloneTask {
   providerTaskId: string;
   status: "queued" | "processing" | "completed" | "failed";
-  statusUrl?: string;
   resultUrl?: string;
   error?: string;
 }
@@ -70,7 +69,6 @@ export interface WorkstationClient extends BaseClient {
     }): Promise<MotionCloneTask>;
     getMotionClone(input: {
       providerTaskId: string;
-      statusUrl?: string;
     }): Promise<MotionCloneTask>;
   };
   overlays: {
@@ -125,9 +123,9 @@ clean portrait frame with exactly one visible performer. Do not add text.`;
 /**
  * Restricted client injected into VidJutsu job workstations.
  *
- * Provider URLs, credentials, payloads, response parsing, and clone scoring are
- * intentionally encapsulated here. EVE-authored programs compose these typed
- * capabilities and cannot invoke agent-backed endpoints.
+ * Provider operations are routed through VidJutsu's trusted provider broker.
+ * EVE-authored programs compose these typed capabilities and never receive
+ * provider credentials or call provider domains directly.
  */
 export function createClient(config: VidJutsuConfig = {}): WorkstationClient {
   const client = createFullClient(config);
@@ -161,12 +159,12 @@ export function createClient(config: VidJutsuConfig = {}): WorkstationClient {
     images: {
       async createCharacter({ prompt, referenceImageUrls = [] }) {
         if (!prompt.trim()) throw new Error("Character prompt is required");
-        return await generateGeminiImage({
+        const generated = await providerRequest<BrokerGeneratedImage>({
           apiUrl,
           apiKey,
-          prompt,
-          imageUrls: referenceImageUrls,
+          body: { prompt, imageUrls: referenceImageUrls },
         });
+        return await uploadGeneratedImage({ apiUrl, apiKey, generated });
       },
       async createStartingImage({ sourceVideoUrl, identityImageUrl }) {
         const extracted: any = await client.extractMedia({
@@ -177,86 +175,30 @@ export function createClient(config: VidJutsuConfig = {}): WorkstationClient {
         if (typeof frameUrl !== "string") {
           throw new Error("VidJutsu did not return the source opening frame");
         }
-        return await generateGeminiImage({
+        const generated = await providerRequest<BrokerGeneratedImage>({
           apiUrl,
           apiKey,
-          prompt: STARTING_IMAGE_PROMPT,
-          imageUrls: [frameUrl, identityImageUrl],
+          body: { prompt: STARTING_IMAGE_PROMPT, imageUrls: [frameUrl, identityImageUrl] },
         });
+        return await uploadGeneratedImage({ apiUrl, apiKey, generated });
       },
     },
     videos: {
       async submitMotionClone(input) {
-        const providerKey = requiredEnvironment("WAVESPEED_API_KEY");
-        const endpoint =
-          input.model === "seedance"
-            ? "https://api.wavespeed.ai/api/v3/bytedance/seedance-2.0/video-edit"
-            : "https://api.wavespeed.ai/api/v3/kwaivgi/kling-v2.6-pro/motion-control";
-        const body =
-          input.model === "seedance"
-            ? {
-                video: input.sourceVideoUrl,
-                reference_images: [input.startingImageUrl],
-                prompt:
-                  input.prompt ??
-                  "Replace the source performer with the reference-image identity while preserving timing, motion, framing, background, and original audio.",
-                aspect_ratio: "9:16",
-                resolution: "480p",
-                enable_web_search: false,
-                generate_audio: false,
-              }
-            : {
-                image: input.startingImageUrl,
-                video: input.sourceVideoUrl,
-                character_orientation: "video",
-                keep_original_sound: true,
-              };
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${providerKey}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(30_000),
+        return await providerRequest<MotionCloneTask>({
+          apiUrl,
+          apiKey,
+          path: "/v1/internal/workstation/providers/motion-clones",
+          body: input,
         });
-        const value: any = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(providerError("WaveSpeed submit", response, value));
-        const data = value.data ?? value;
-        const providerTaskId = data.id ?? data.prediction_id;
-        if (typeof providerTaskId !== "string") {
-          throw new Error("WaveSpeed submit did not return a task ID");
-        }
-        return {
-          providerTaskId,
-          status: normalizeProviderStatus(data.status),
-          resultUrl: firstOutput(data),
-          ...(typeof data.urls?.get === "string" ? { statusUrl: data.urls.get } : {}),
-        } as MotionCloneTask;
       },
-      async getMotionClone({ providerTaskId, statusUrl }) {
-        const providerKey = requiredEnvironment("WAVESPEED_API_KEY");
-        const url =
-          statusUrl ??
-          `https://api.wavespeed.ai/api/v3/predictions/${encodeURIComponent(providerTaskId)}/result`;
-        const response = await fetch(url, {
-          headers: { authorization: `Bearer ${providerKey}` },
-          signal: AbortSignal.timeout(30_000),
+      async getMotionClone({ providerTaskId }) {
+        return await providerRequest<MotionCloneTask>({
+          apiUrl,
+          apiKey,
+          path: "/v1/internal/workstation/providers/motion-clones/status",
+          body: { providerTaskId },
         });
-        const value: any = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(providerError("WaveSpeed status", response, value));
-        const data = value.data ?? value;
-        return {
-          providerTaskId,
-          status: normalizeProviderStatus(data.status),
-          resultUrl: firstOutput(data),
-          error:
-            typeof data.error === "string"
-              ? data.error
-              : typeof data.error?.message === "string"
-                ? data.error.message
-                : undefined,
-        };
       },
     },
     overlays: {
@@ -391,102 +333,71 @@ function scoreCloneability(observations: any): CloneCheckResult {
   };
 }
 
-async function generateGeminiImage(input: {
+interface BrokerGeneratedImage {
+  kind: "gemini_image";
+  mimeType: string;
+  base64Data: string;
+  interactionId: string;
+}
+
+async function providerRequest<T>(input: {
   apiUrl: string;
   apiKey?: string;
-  prompt: string;
-  imageUrls: string[];
-}): Promise<GeneratedImageAsset> {
-  const geminiKey = requiredEnvironment("GEMINI_API_KEY");
-  const imageInputs = await Promise.all(
-    input.imageUrls.map(async (url) => {
-      const response = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!response.ok) throw new Error(`Unable to fetch image input (${response.status})`);
-      return {
-        type: "image",
-        mime_type: response.headers.get("content-type")?.split(";")[0] ?? "image/jpeg",
-        data: Buffer.from(await response.arrayBuffer()).toString("base64"),
-      };
-    }),
-  );
-  const response = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/interactions",
-    {
-      method: "POST",
-      headers: {
-        "x-goog-api-key": geminiKey,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gemini-3.1-flash-image",
-        input: [{ type: "text", text: input.prompt }, ...imageInputs],
-        response_format: {
-          type: "image",
-          mime_type: "image/jpeg",
-          aspect_ratio: "9:16",
-          image_size: "1K",
-        },
-      }),
-      signal: AbortSignal.timeout(120_000),
-    },
-  );
-  const value: any = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(providerError("Gemini image", response, value));
-  const image = [...(value.steps ?? [])]
-    .reverse()
-    .flatMap((step: any) => step?.type === "model_output" ? step.content ?? [] : [])
-    .find((content: any) => content?.type === "image" && typeof content.data === "string");
-  if (!image) throw new Error("Gemini image response did not contain an image");
+  path?: string;
+  body: unknown;
+}): Promise<T> {
   if (!input.apiKey) throw new Error("VidJutsu job credential is unavailable");
+  const path = input.path ?? "/v1/internal/workstation/providers/gemini-image";
+  const response = await fetch(`${input.apiUrl.replace(/\/$/, "")}${path}`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${input.apiKey}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(input.body),
+    signal: AbortSignal.timeout(120_000),
+  });
+  const value: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(`VidJutsu provider broker failed (${response.status})`);
+  }
+  return value as T;
+}
+
+async function uploadGeneratedImage(input: {
+  apiUrl: string;
+  apiKey?: string;
+  generated: BrokerGeneratedImage;
+}): Promise<GeneratedImageAsset> {
+  if (!input.apiKey) throw new Error("VidJutsu job credential is unavailable");
+  if (!input.generated.base64Data || !input.generated.mimeType) {
+    throw new Error("VidJutsu provider broker returned an invalid image");
+  }
   const upload = await fetch(`${input.apiUrl.replace(/\/$/, "")}/v1/upload`, {
     method: "POST",
     headers: {
       authorization: `Bearer ${input.apiKey}`,
-      "content-type": image.mime_type ?? "image/jpeg",
+      "content-type": input.generated.mimeType,
     },
-    body: Buffer.from(image.data, "base64"),
+    body: Buffer.from(input.generated.base64Data, "base64"),
     signal: AbortSignal.timeout(60_000),
   });
-  const uploaded: any = await upload.json().catch(() => ({}));
-  if (!upload.ok || typeof uploaded.assetId !== "string" || typeof uploaded.url !== "string") {
+  const uploaded: unknown = await upload.json().catch(() => null);
+  if (
+    !upload.ok ||
+    !uploaded ||
+    typeof uploaded !== "object" ||
+    typeof (uploaded as Record<string, unknown>).assetId !== "string" ||
+    typeof (uploaded as Record<string, unknown>).url !== "string"
+  ) {
     throw new Error(`VidJutsu image upload failed (${upload.status})`);
   }
+  const value = uploaded as Record<string, string>;
   return {
-    assetId: uploaded.assetId,
-    url: uploaded.url,
-    interactionId: String(value.id ?? "unknown"),
+    assetId: value.assetId,
+    url: value.url,
+    interactionId: input.generated.interactionId,
   };
-}
-
-function normalizeProviderStatus(value: unknown): MotionCloneTask["status"] {
-  const status = String(value ?? "queued").toLowerCase();
-  if (["completed", "succeeded", "success"].includes(status)) return "completed";
-  if (["failed", "error", "cancelled", "canceled"].includes(status)) return "failed";
-  if (["running", "processing", "in_progress"].includes(status)) return "processing";
-  return "queued";
-}
-
-function firstOutput(value: any): string | undefined {
-  const candidate = value?.outputs?.[0] ?? value?.output?.[0] ?? value?.output;
-  return typeof candidate === "string" ? candidate : undefined;
-}
-
-function providerError(prefix: string, response: Response, value: any): string {
-  const message =
-    typeof value?.message === "string"
-      ? value.message
-      : typeof value?.error === "string"
-        ? value.error
-        : typeof value?.error?.message === "string"
-          ? value.error.message
-          : "provider request failed";
-  return `${prefix} failed (${response.status}): ${message}`;
-}
-
-function requiredEnvironment(name: "GEMINI_API_KEY" | "WAVESPEED_API_KEY"): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is not configured`);
-  return value;
 }
 
 export type { VidJutsuConfig };
