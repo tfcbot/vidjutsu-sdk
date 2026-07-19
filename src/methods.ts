@@ -22,6 +22,10 @@ export interface VidJutsuMethods {
   listOrGetAccounts(query?: QueryParams<"/v1/accounts", "get">): ReturnType<Client["GET"]>;
   /** Delete account Auth required. */
   deleteAccount(query?: QueryParams<"/v1/accounts", "delete">): ReturnType<Client["DELETE"]>;
+  /** Create an asynchronous agent media task Auth required. 0 credits. */
+  createAgentTask(body: ReqBody<"/v1/agent/tasks", "post">): ReturnType<Client["POST"]>;
+  /** Tail structured agent task events Auth required. */
+  listAgentTaskEvents(query?: QueryParams<"/v1/agent/tasks/events", "get">): ReturnType<Client["GET"]>;
   /** Recover API key Public endpoint. */
   recoverApiKey(body: ReqBody<"/v1/api_keys/recover", "post">): ReturnType<Client["POST"]>;
   /** Rotate API key Auth required. */
@@ -193,6 +197,12 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     deleteAccount(query) {
       return client.DELETE("/v1/accounts" as any, { params: { query } } as any);
+    },
+    createAgentTask(body) {
+      return client.POST("/v1/agent/tasks" as any, { body } as any);
+    },
+    listAgentTaskEvents(query) {
+      return client.GET("/v1/agent/tasks/events" as any, { params: { query } } as any);
     },
     recoverApiKey(body) {
       return client.POST("/v1/api_keys/recover" as any, { body } as any);

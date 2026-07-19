@@ -22,6 +22,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/agent/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an asynchronous agent media task */
+        post: operations["createAgentTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/agent/tasks/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tail structured agent task events */
+        get: operations["listAgentTaskEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/api_keys/recover": {
         parameters: {
             query?: never;
@@ -1467,6 +1501,55 @@ export interface components {
             /** @description Email address the agent asserts on behalf of the principal. */
             assertion: string;
         };
+        AgentTaskAccepted: {
+            id: string;
+            status: components["schemas"]["AgentTaskStatus"];
+            statusUrl: string;
+            eventsUrl: string;
+        };
+        AgentTaskAssetInput: {
+            name: string;
+            assetId: string;
+        };
+        AgentTaskEvent: {
+            id: string;
+            taskId: string;
+            /** Format: int32 */
+            sequence: number;
+            type: components["schemas"]["AgentTaskEventType"];
+            data: unknown;
+            /** Format: int64 */
+            createdAt: number;
+        };
+        AgentTaskEventPage: {
+            taskId: string;
+            events: components["schemas"]["AgentTaskEvent"][];
+            nextCursor?: string;
+            terminal: boolean;
+        };
+        /** @enum {string} */
+        AgentTaskEventType: "task.created" | "agent.started" | "stage.started" | "stage.completed" | "stage.failed" | "checkpoint.created" | "provider.submitted" | "task.waiting" | "task.retrying" | "task.rejected" | "task.completed" | "task.failed" | "task.cancelled";
+        AgentTaskInputSource: components["schemas"]["AgentTaskUrlInput"] | components["schemas"]["AgentTaskAssetInput"];
+        AgentTaskResult: {
+            /** @enum {string} */
+            kind: "agent_task";
+            /** @enum {string} */
+            outcome: "completed" | "rejected";
+            finalAssetId?: string;
+            /** Format: uri */
+            finalUrl?: string;
+            summary?: string;
+            reasons?: string[];
+            /** Format: int64 */
+            costMicros?: number;
+        };
+        /** @enum {string} */
+        AgentTaskStatus: "queued" | "running" | "waiting_provider" | "retrying" | "rejected" | "completed" | "failed" | "cancelled";
+        AgentTaskUrlInput: {
+            name: string;
+            /** Format: uri */
+            url: string;
+        };
         ApiError: {
             error: string;
             message: string;
@@ -1751,6 +1834,10 @@ export interface components {
             citation: components["schemas"]["ComplianceCitation"];
             evidence: components["schemas"]["ComplianceEvidence"];
         };
+        CreateAgentTaskRequest: {
+            prompt: string;
+            inputs?: components["schemas"]["AgentTaskInputSource"][];
+        };
         CreateCharacterRequest: {
             prompt: string;
             referenceImageAssetIds?: string[];
@@ -1955,10 +2042,10 @@ export interface components {
             retryable: boolean;
         };
         /** @enum {string} */
-        MediaJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost" | "cloneCheck" | "createCharacter" | "cloneStartingImage" | "cloneVideo";
-        MediaJobResult: components["schemas"]["CloneCheckResult"] | components["schemas"]["CharacterResult"] | components["schemas"]["StartingImageResult"] | components["schemas"]["CloneVideoResult"];
+        MediaJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost" | "cloneCheck" | "createCharacter" | "cloneStartingImage" | "cloneVideo" | "agentTask";
+        MediaJobResult: components["schemas"]["CloneCheckResult"] | components["schemas"]["CharacterResult"] | components["schemas"]["StartingImageResult"] | components["schemas"]["CloneVideoResult"] | components["schemas"]["AgentTaskResult"];
         /** @enum {string} */
-        MediaJobStatus: "queued" | "running" | "completed" | "failed" | "cancelled";
+        MediaJobStatus: "queued" | "running" | "waiting_provider" | "retrying" | "rejected" | "completed" | "failed" | "cancelled";
         OverlayRequest: {
             /** @description URL of the source video */
             videoUrl: string;
@@ -2556,6 +2643,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountDeleteResponse"];
+                };
+            };
+        };
+    };
+    createAgentTask: {
+        parameters: {
+            query?: never;
+            header: {
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAgentTaskRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTaskAccepted"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    listAgentTaskEvents: {
+        parameters: {
+            query: {
+                id: string;
+                after?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentTaskEventPage"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };

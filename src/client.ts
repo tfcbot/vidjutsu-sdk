@@ -3,6 +3,7 @@ import type { paths } from "./schema.js";
 import { bindMethods, type VidJutsuMethods } from "./methods.js";
 import { bindDistribution, type DistributionNamespaces } from "./distribution.js";
 import { bindCloning, type CloningNamespaces } from "./cloning.js";
+import { bindAgentTasks, type AgentTaskNamespaces } from "./agent-tasks.js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
@@ -22,6 +23,7 @@ export type VidJutsuClient =
   & VidJutsuMethods
   & DistributionNamespaces
   & CloningNamespaces
+  & AgentTaskNamespaces
   & { api: FetchClient };
 
 interface ConfigFile {
@@ -84,6 +86,7 @@ export function createClient(config: VidJutsuConfig = {}): VidJutsuClient {
   const methods = bindMethods(fetchClient);
   const distribution = bindDistribution(fetchClient);
   const cloning = bindCloning(fetchClient);
+  const agentTasks = bindAgentTasks(fetchClient);
 
-  return { ...methods, ...distribution, ...cloning, api: fetchClient };
+  return { ...methods, ...distribution, ...cloning, ...agentTasks, api: fetchClient };
 }
