@@ -63,6 +63,8 @@ const ROUTE_META: Record<string, { auth: string; credits: number; special?: stri
   cloneStartingImage:   { auth: "authenticated", credits: 0 },
   cloneVideo:           { auth: "authenticated", credits: 0 },
   getJob:               { auth: "authenticated", credits: 0 },
+  createAgentTask:       { auth: "paid", credits: 0 },
+  listAgentTaskEvents:   { auth: "authenticated", credits: 0 },
   downloadTikTokVideo:  { auth: "paid", credits: 1 },
   downloadInstagramVideo: { auth: "paid", credits: 1 },
   watchMedia:          { auth: "paid", credits: 10 },
