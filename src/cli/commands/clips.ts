@@ -18,7 +18,6 @@ export default defineCommand({
     generate: defineCommand({
       meta: { name: "generate", description: "Generate a bounded batch of 9:16 clips" },
       args: {
-        youtube: { type: "string", description: "One YouTube watch URL" },
         url: { type: "string", description: "Direct HTTP(S) MP4 URL" },
         asset: { type: "string", description: "Existing uploaded asset ID" },
         video: { type: "string", description: "Existing normalized video ID" },
@@ -31,17 +30,15 @@ export default defineCommand({
         "idempotency-key": { type: "string", description: "Safe retry key" },
       },
       async run({ args }) {
-        const choices = [args.youtube, args.url, args.asset, args.video].filter(Boolean);
+        const choices = [args.url, args.asset, args.video].filter(Boolean);
         if (choices.length !== 1) {
-          throw new Error("Provide exactly one of --youtube, --url, --asset, or --video");
+          throw new Error("Provide exactly one of --url, --asset, or --video");
         }
-        const source = args.youtube
-          ? { kind: "youtube", url: args.youtube }
-          : args.url
-            ? { kind: "http", url: args.url }
-            : args.asset
-              ? { kind: "asset", assetId: args.asset }
-              : undefined;
+        const source = args.url
+          ? { kind: "http", url: args.url }
+          : args.asset
+            ? { kind: "asset", assetId: args.asset }
+            : undefined;
         if (source && args["rights-attested"] !== true) {
           throw new Error("--rights-attested is required when supplying a source");
         }

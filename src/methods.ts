@@ -116,14 +116,6 @@ export interface VidJutsuMethods {
   listOrGetReferences(query?: QueryParams<"/v1/references", "get">): ReturnType<Client["GET"]>;
   /** Delete reference Auth required. */
   deleteReference(query?: QueryParams<"/v1/references", "delete">): ReturnType<Client["DELETE"]>;
-  /** Scrape Google Ad Transparency Auth required. 1 credits. */
-  scrapeGoogleAds(body: ReqBody<"/v1/scrape/ads/google", "post">): ReturnType<Client["POST"]>;
-  /** Scrape LinkedIn Ad Library Auth required. 1 credits. */
-  scrapeLinkedInAds(body: ReqBody<"/v1/scrape/ads/linkedin", "post">): ReturnType<Client["POST"]>;
-  /** Scrape Meta (Facebook) Ad Library Auth required. 1 credits. */
-  scrapeMetaAds(body: ReqBody<"/v1/scrape/ads/meta", "post">): ReturnType<Client["POST"]>;
-  /** Scrape Reddit Ad Library Auth required. 1 credits. */
-  scrapeRedditAds(body: ReqBody<"/v1/scrape/ads/reddit", "post">): ReturnType<Client["POST"]>;
   /** Scrape Instagram post or reel Auth required. 1 credits. */
   scrapeInstagramPost(body: ReqBody<"/v1/scrape/instagram/post", "post">): ReturnType<Client["POST"]>;
   /** Scrape Instagram post comments Auth required. 1 credits. */
@@ -148,22 +140,6 @@ export interface VidJutsuMethods {
   scrapeTikTokVideoComments(body: ReqBody<"/v1/scrape/tiktok/video/comments", "post">): ReturnType<Client["POST"]>;
   /** Scrape TikTok video transcript Auth required. 1 credits. */
   scrapeTikTokVideoTranscript(body: ReqBody<"/v1/scrape/tiktok/video/transcript", "post">): ReturnType<Client["POST"]>;
-  /** Scrape X profile Auth required. 1 credits. */
-  scrapeTwitterProfile(body: ReqBody<"/v1/scrape/twitter/profile", "post">): ReturnType<Client["POST"]>;
-  /** Scrape X tweet Auth required. 1 credits. */
-  scrapeTwitterTweet(body: ReqBody<"/v1/scrape/twitter/tweet", "post">): ReturnType<Client["POST"]>;
-  /** Scrape X tweet video transcript Auth required. 1 credits. */
-  scrapeTwitterTweetTranscript(body: ReqBody<"/v1/scrape/twitter/tweet/transcript", "post">): ReturnType<Client["POST"]>;
-  /** Scrape X user tweets Auth required. 1 credits. */
-  scrapeTwitterUserTweets(body: ReqBody<"/v1/scrape/twitter/user-tweets", "post">): ReturnType<Client["POST"]>;
-  /** Scrape YouTube channel Auth required. 1 credits. */
-  scrapeYouTubeChannel(body: ReqBody<"/v1/scrape/youtube/channel", "post">): ReturnType<Client["POST"]>;
-  /** Scrape YouTube channel videos Auth required. 1 credits. */
-  scrapeYouTubeChannelVideos(body: ReqBody<"/v1/scrape/youtube/channel-videos", "post">): ReturnType<Client["POST"]>;
-  /** Scrape YouTube video Auth required. 1 credits. */
-  scrapeYouTubeVideo(body: ReqBody<"/v1/scrape/youtube/video", "post">): ReturnType<Client["POST"]>;
-  /** Scrape YouTube video comments Auth required. 1 credits. */
-  scrapeYouTubeVideoComments(body: ReqBody<"/v1/scrape/youtube/video/comments", "post">): ReturnType<Client["POST"]>;
   /** Create subscription Public endpoint. */
   createSubscription(body: ReqBody<"/v1/subscribe", "post">): ReturnType<Client["POST"]>;
   /** Transcribe media Auth required. 10 credits. */
@@ -174,7 +150,7 @@ export interface VidJutsuMethods {
   uploadFromUrl(body: ReqBody<"/v1/upload/url", "post">): ReturnType<Client["POST"]>;
   /** Get daily usage */
   getUsage(): ReturnType<Client["GET"]>;
-  /** Add a video from an uploaded asset, direct MP4 URL, or YouTube URL Auth required. */
+  /** Add a video from an uploaded asset or direct MP4 URL Auth required. */
   addVideo(body: ReqBody<"/v1/videos/add", "post">): ReturnType<Client["POST"]>;
   /** Import an Instagram video into VidJutsu Auth required. 1 credits. */
   downloadInstagramVideo(body: ReqBody<"/v1/videos/download/instagram", "post">): ReturnType<Client["POST"]>;
@@ -339,18 +315,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     deleteReference(query) {
       return client.DELETE("/v1/references" as any, { params: { query } } as any);
     },
-    scrapeGoogleAds(body) {
-      return client.POST("/v1/scrape/ads/google" as any, { body } as any);
-    },
-    scrapeLinkedInAds(body) {
-      return client.POST("/v1/scrape/ads/linkedin" as any, { body } as any);
-    },
-    scrapeMetaAds(body) {
-      return client.POST("/v1/scrape/ads/meta" as any, { body } as any);
-    },
-    scrapeRedditAds(body) {
-      return client.POST("/v1/scrape/ads/reddit" as any, { body } as any);
-    },
     scrapeInstagramPost(body) {
       return client.POST("/v1/scrape/instagram/post" as any, { body } as any);
     },
@@ -386,30 +350,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     scrapeTikTokVideoTranscript(body) {
       return client.POST("/v1/scrape/tiktok/video/transcript" as any, { body } as any);
-    },
-    scrapeTwitterProfile(body) {
-      return client.POST("/v1/scrape/twitter/profile" as any, { body } as any);
-    },
-    scrapeTwitterTweet(body) {
-      return client.POST("/v1/scrape/twitter/tweet" as any, { body } as any);
-    },
-    scrapeTwitterTweetTranscript(body) {
-      return client.POST("/v1/scrape/twitter/tweet/transcript" as any, { body } as any);
-    },
-    scrapeTwitterUserTweets(body) {
-      return client.POST("/v1/scrape/twitter/user-tweets" as any, { body } as any);
-    },
-    scrapeYouTubeChannel(body) {
-      return client.POST("/v1/scrape/youtube/channel" as any, { body } as any);
-    },
-    scrapeYouTubeChannelVideos(body) {
-      return client.POST("/v1/scrape/youtube/channel-videos" as any, { body } as any);
-    },
-    scrapeYouTubeVideo(body) {
-      return client.POST("/v1/scrape/youtube/video" as any, { body } as any);
-    },
-    scrapeYouTubeVideoComments(body) {
-      return client.POST("/v1/scrape/youtube/video/comments" as any, { body } as any);
     },
     createSubscription(body) {
       return client.POST("/v1/subscribe" as any, { body } as any);

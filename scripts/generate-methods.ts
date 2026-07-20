@@ -8,13 +8,15 @@
  *   bun scripts/generate-methods.ts                          # fetch from GitHub
  *   bun scripts/generate-methods.ts --local path/to/spec.json # use local spec
  */
-import { writeFileSync } from "fs";
+import { writeFileSync, readFileSync } from "fs";
 import { resolve } from "path";
+import { fileURLToPath } from "url";
 
 const SPEC_URL =
   "https://raw.githubusercontent.com/tfcbot/vidjutsu-openapi/main/openapi/spec.json";
 
-const outPath = resolve(import.meta.dir, "../src/methods.ts");
+const scriptDir = fileURLToPath(new URL(".", import.meta.url));
+const outPath = resolve(scriptDir, "../src/methods.ts");
 
 // ---------------------------------------------------------------------------
 // Route metadata (auth level + credits per operation)
@@ -85,18 +87,6 @@ const ROUTE_META: Record<string, { auth: string; credits: number; special?: stri
   scrapeInstagramPost:           { auth: "paid", credits: 1 },
   scrapeInstagramPostComments:   { auth: "paid", credits: 1 },
   scrapeInstagramUserReels:      { auth: "paid", credits: 1 },
-  scrapeTwitterProfile:          { auth: "paid", credits: 1 },
-  scrapeTwitterUserTweets:       { auth: "paid", credits: 1 },
-  scrapeTwitterTweet:            { auth: "paid", credits: 1 },
-  scrapeTwitterTweetTranscript:  { auth: "paid", credits: 1 },
-  scrapeYouTubeChannel:          { auth: "paid", credits: 1 },
-  scrapeYouTubeChannelVideos:    { auth: "paid", credits: 1 },
-  scrapeYouTubeVideo:            { auth: "paid", credits: 1 },
-  scrapeYouTubeVideoComments:    { auth: "paid", credits: 1 },
-  scrapeMetaAds:                 { auth: "paid", credits: 1 },
-  scrapeGoogleAds:               { auth: "paid", credits: 1 },
-  scrapeLinkedInAds:             { auth: "paid", credits: 1 },
-  scrapeRedditAds:               { auth: "paid", credits: 1 },
 };
 
 // ---------------------------------------------------------------------------
@@ -106,8 +96,7 @@ const ROUTE_META: Record<string, { auth: string; credits: number; special?: stri
 async function loadSpec(): Promise<any> {
   const localIdx = process.argv.indexOf("--local");
   if (localIdx !== -1 && process.argv[localIdx + 1]) {
-    const file = Bun.file(process.argv[localIdx + 1]);
-    return file.json();
+    return JSON.parse(readFileSync(process.argv[localIdx + 1], "utf8"));
   }
   const res = await fetch(SPEC_URL);
   if (!res.ok) throw new Error(`Failed to fetch spec: ${res.status}`);

@@ -3,7 +3,6 @@ import { apiRequest } from "../client";
 import { cloneModel, lowScoreOverride, sourceFromArgs } from "../clone-source";
 
 const sourceArgs = {
-  youtube: { type: "string" as const, description: "One YouTube watch URL" },
   url: { type: "string" as const, description: "Direct HTTP(S) video URL" },
   asset: { type: "string" as const, description: "Existing VidJutsu video asset ID" },
 };

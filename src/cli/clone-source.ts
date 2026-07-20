@@ -1,17 +1,14 @@
 export function sourceFromArgs(args: {
-  youtube?: string;
   url?: string;
   asset?: string;
 }) {
-  const choices = [args.youtube, args.url, args.asset].filter(Boolean);
+  const choices = [args.url, args.asset].filter(Boolean);
   if (choices.length !== 1) {
-    throw new Error("Provide exactly one of --youtube, --url, or --asset");
+    throw new Error("Provide exactly one of --url or --asset");
   }
-  return args.youtube
-    ? { kind: "youtube" as const, url: args.youtube }
-    : args.url
-      ? { kind: "http" as const, url: args.url }
-      : { kind: "asset" as const, assetId: args.asset! };
+  return args.url
+    ? { kind: "http" as const, url: args.url }
+    : { kind: "asset" as const, assetId: args.asset! };
 }
 
 export function cloneModel(value: string): "seedance" | "kling-motion-control" {
