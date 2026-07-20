@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 import { defineCommand, runMain } from "citty";
 import { VERSION } from "./version";
+import { createVidJutsuAgentExtension } from "./agent/vidjutsu-extension";
 
-const main = defineCommand({
+const cli = defineCommand({
   meta: {
     name: "vidjutsu",
     version: VERSION,
@@ -40,4 +41,20 @@ const main = defineCommand({
   },
 });
 
-runMain(main);
+async function run() {
+  const [, , command, ...args] = process.argv;
+
+  if (command === "agent") {
+    console.log("VidJutsu Agent");
+    console.log("Use /login to connect Claude or OpenAI.");
+    console.log("");
+
+    const { main: runPi } = await import("@earendil-works/pi-coding-agent");
+    await runPi(args, { extensionFactories: [createVidJutsuAgentExtension] });
+    return;
+  }
+
+  await runMain(cli);
+}
+
+run();
