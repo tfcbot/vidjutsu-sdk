@@ -10,11 +10,13 @@
 import openapiTS, { astToString } from "openapi-typescript";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
+import { fileURLToPath } from "url";
 
 const SPEC_URL =
   "https://raw.githubusercontent.com/tfcbot/vidjutsu-openapi/main/openapi/spec.json";
 
-const outPath = resolve(import.meta.dir, "../src/schema.d.ts");
+const scriptDir = fileURLToPath(new URL(".", import.meta.url));
+const outPath = resolve(scriptDir, "../src/schema.d.ts");
 
 // Determine spec source
 const localIdx = process.argv.indexOf("--local");
