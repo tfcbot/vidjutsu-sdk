@@ -22,10 +22,6 @@ export interface VidJutsuMethods {
   listOrGetAccounts(query?: QueryParams<"/v1/accounts", "get">): ReturnType<Client["GET"]>;
   /** Delete account Auth required. */
   deleteAccount(query?: QueryParams<"/v1/accounts", "delete">): ReturnType<Client["DELETE"]>;
-  /** Create an asynchronous agent media task Auth required. 0 credits. */
-  createAgentTask(body: ReqBody<"/v1/agent/tasks", "post">): ReturnType<Client["POST"]>;
-  /** Tail structured agent task events Auth required. */
-  listAgentTaskEvents(query?: QueryParams<"/v1/agent/tasks/events", "get">): ReturnType<Client["GET"]>;
   /** Recover API key Public endpoint. */
   recoverApiKey(body: ReqBody<"/v1/api_keys/recover", "post">): ReturnType<Client["POST"]>;
   /** Rotate API key Auth required. */
@@ -50,8 +46,6 @@ export interface VidJutsuMethods {
   confirmVerification(body: ReqBody<"/v1/auth/verify/confirm", "post">): ReturnType<Client["POST"]>;
   /** Request email verification code Public endpoint. */
   requestVerification(body: ReqBody<"/v1/auth/verify/request", "post">): ReturnType<Client["POST"]>;
-  /** Create a reusable generated character Auth required. */
-  createCharacter(body: ReqBody<"/v1/characters", "post">): ReturnType<Client["POST"]>;
   /** Check spec Auth required. 5 credits. */
   checkSpec(body: ReqBody<"/v1/check", "post">): ReturnType<Client["POST"]>;
   /** Get check rules Auth required. */
@@ -64,12 +58,6 @@ export interface VidJutsuMethods {
   addClipCaptions(body: ReqBody<"/v1/clips/captions", "post">): ReturnType<Client["POST"]>;
   /** Generate a bounded batch of 9:16 clips from a video source or video ID Auth required. */
   generateClips(body: ReqBody<"/v1/clips/generate", "post">): ReturnType<Client["POST"]>;
-  /** Evaluate whether a source video can be cloned reliably Auth required. */
-  cloneCheck(body: ReqBody<"/v1/clones/check", "post">): ReturnType<Client["POST"]>;
-  /** Create a clean character-swapped starting frame Auth required. */
-  cloneStartingImage(body: ReqBody<"/v1/clones/starting-image", "post">): ReturnType<Client["POST"]>;
-  /** Clone source motion with Seedance or Kling motion control Auth required. */
-  cloneVideo(body: ReqBody<"/v1/clones/video", "post">): ReturnType<Client["POST"]>;
   /** Check prompt compliance */
   checkCompliancePrompt(body: ReqBody<"/v1/compliance/prompt", "post">): ReturnType<Client["POST"]>;
   /** Check video compliance */
@@ -174,12 +162,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     deleteAccount(query) {
       return client.DELETE("/v1/accounts" as any, { params: { query } } as any);
     },
-    createAgentTask(body) {
-      return client.POST("/v1/agent/tasks" as any, { body } as any);
-    },
-    listAgentTaskEvents(query) {
-      return client.GET("/v1/agent/tasks/events" as any, { params: { query } } as any);
-    },
     recoverApiKey(body) {
       return client.POST("/v1/api_keys/recover" as any, { body } as any);
     },
@@ -216,9 +198,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     requestVerification(body) {
       return client.POST("/v1/auth/verify/request" as any, { body } as any);
     },
-    createCharacter(body) {
-      return client.POST("/v1/characters" as any, { body } as any);
-    },
     checkSpec(body) {
       return client.POST("/v1/check" as any, { body } as any);
     },
@@ -236,15 +215,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     generateClips(body) {
       return client.POST("/v1/clips/generate" as any, { body } as any);
-    },
-    cloneCheck(body) {
-      return client.POST("/v1/clones/check" as any, { body } as any);
-    },
-    cloneStartingImage(body) {
-      return client.POST("/v1/clones/starting-image" as any, { body } as any);
-    },
-    cloneVideo(body) {
-      return client.POST("/v1/clones/video" as any, { body } as any);
     },
     checkCompliancePrompt(body) {
       return client.POST("/v1/compliance/prompt" as any, { body } as any);
