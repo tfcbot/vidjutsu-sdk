@@ -22,40 +22,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/agent/tasks": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create an asynchronous agent media task */
-        post: operations["createAgentTask"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/agent/tasks/events": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Tail structured agent task events */
-        get: operations["listAgentTaskEvents"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/api_keys/recover": {
         parameters: {
             query?: never;
@@ -233,23 +199,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/characters": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a reusable generated character */
-        post: operations["createCharacter"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/check": {
         parameters: {
             query?: never;
@@ -348,60 +297,6 @@ export interface paths {
          * @description One semantic job may resolve the source, transcribe it, find moments, and reframe clips. Returns a durable job; provider and model choices remain internal.
          */
         post: operations["generateClips"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/clones/check": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Evaluate whether a source video can be cloned reliably
-         * @description Starts a durable EVE-backed analysis job. The result contains a deterministic cloneability score grounded in prompted VidJutsu watch evidence.
-         */
-        post: operations["cloneCheck"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/clones/starting-image": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create a clean character-swapped starting frame */
-        post: operations["cloneStartingImage"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/clones/video": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Clone source motion with Seedance or Kling motion control */
-        post: operations["cloneVideo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1261,55 +1156,6 @@ export interface components {
             /** @description Email address the agent asserts on behalf of the principal. */
             assertion: string;
         };
-        AgentTaskAccepted: {
-            id: string;
-            status: components["schemas"]["AgentTaskStatus"];
-            statusUrl: string;
-            eventsUrl: string;
-        };
-        AgentTaskAssetInput: {
-            name: string;
-            assetId: string;
-        };
-        AgentTaskEvent: {
-            id: string;
-            taskId: string;
-            /** Format: int32 */
-            sequence: number;
-            type: components["schemas"]["AgentTaskEventType"];
-            data: unknown;
-            /** Format: int64 */
-            createdAt: number;
-        };
-        AgentTaskEventPage: {
-            taskId: string;
-            events: components["schemas"]["AgentTaskEvent"][];
-            nextCursor?: string;
-            terminal: boolean;
-        };
-        /** @enum {string} */
-        AgentTaskEventType: "task.created" | "agent.started" | "stage.started" | "stage.completed" | "stage.failed" | "checkpoint.created" | "provider.submitted" | "task.waiting" | "task.retrying" | "task.rejected" | "task.completed" | "task.failed" | "task.cancelled";
-        AgentTaskInputSource: components["schemas"]["AgentTaskUrlInput"] | components["schemas"]["AgentTaskAssetInput"];
-        AgentTaskResult: {
-            /** @enum {string} */
-            kind: "agent_task";
-            /** @enum {string} */
-            outcome: "completed" | "rejected";
-            finalAssetId?: string;
-            /** Format: uri */
-            finalUrl?: string;
-            summary?: string;
-            reasons?: string[];
-            /** Format: int64 */
-            costMicros?: number;
-        };
-        /** @enum {string} */
-        AgentTaskStatus: "queued" | "running" | "waiting_provider" | "retrying" | "rejected" | "completed" | "failed" | "cancelled";
-        AgentTaskUrlInput: {
-            name: string;
-            /** Format: uri */
-            url: string;
-        };
         ApiError: {
             error: string;
             message: string;
@@ -1409,12 +1255,6 @@ export interface components {
         };
         /** @enum {string} */
         BrollMode: "auto" | "supplied" | "none";
-        CharacterResult: {
-            /** @enum {string} */
-            kind: "character";
-            characterId: string;
-            identityImageAssetId: string;
-        };
         CheckRequest: {
             /** @description VidLang spec JSON to validate */
             spec: {
@@ -1468,54 +1308,6 @@ export interface components {
         ClipStatus: "processing" | "ready" | "failed";
         /** @enum {string} */
         ClipTransformKind: "generated" | "timestamps" | "captions" | "broll";
-        CloneCheckEvidence: {
-            criterion: string;
-            observation: string;
-            timestamps: number[];
-        };
-        CloneCheckRequest: {
-            source: components["schemas"]["VideoSource"];
-            rubricVersion?: string;
-            dryRun?: boolean;
-        };
-        CloneCheckResult: {
-            /** @enum {string} */
-            kind: "clone_check";
-            checkId: string;
-            /** Format: int32 */
-            successPercent: number;
-            verdict: components["schemas"]["CloneCheckVerdict"];
-            evidence: components["schemas"]["CloneCheckEvidence"][];
-            failedCriteria: string[];
-            recommendedModel: components["schemas"]["VideoCloneModel"];
-            rubricVersion: string;
-        };
-        /** @enum {string} */
-        CloneCheckVerdict: "recommended" | "marginal" | "not_recommended";
-        CloneStartingImageRequest: {
-            source: components["schemas"]["VideoSource"];
-            characterId: string;
-            dryRun?: boolean;
-        };
-        CloneVideoRequest: {
-            source: components["schemas"]["VideoSource"];
-            startingImageAssetId: string;
-            model: components["schemas"]["VideoCloneModel"];
-            cloneCheckId: string;
-            override?: components["schemas"]["LowScoreOverride"];
-            dryRun?: boolean;
-        };
-        CloneVideoResult: {
-            /** @enum {string} */
-            kind: "clone_video";
-            assetId: string;
-            /** Format: uri */
-            url?: string;
-            model: components["schemas"]["VideoCloneModel"];
-            cloneCheckId: string;
-            /** Format: int32 */
-            qaScore?: number;
-        };
         ComplianceCheckResponse: {
             /**
              * Format: int32
@@ -1593,15 +1385,6 @@ export interface components {
             explanation: string;
             citation: components["schemas"]["ComplianceCitation"];
             evidence: components["schemas"]["ComplianceEvidence"];
-        };
-        CreateAgentTaskRequest: {
-            prompt: string;
-            inputs?: components["schemas"]["AgentTaskInputSource"][];
-        };
-        CreateCharacterRequest: {
-            prompt: string;
-            referenceImageAssetIds?: string[];
-            dryRun?: boolean;
         };
         /** @description Per-endpoint daily request limits, keyed by endpoint name (fixed window, resets 00:00 UTC). */
         DailyLimits: {
@@ -1778,18 +1561,12 @@ export interface components {
             kind: "video" | "clip" | "post" | "image" | "character" | "clone_check";
             id: string;
         };
-        LowScoreOverride: {
-            /** @enum {boolean} */
-            allowLowScore: true;
-            reason: string;
-        };
         MediaJob: {
             jobId: string;
             parentJobId?: string;
             operation: components["schemas"]["MediaJobOperation"];
             status: components["schemas"]["MediaJobStatus"];
             outputs?: components["schemas"]["JobOutputResource"][];
-            result?: components["schemas"]["MediaJobResult"];
             error?: components["schemas"]["MediaJobError"];
             /** Format: int64 */
             createdAt: number;
@@ -1802,8 +1579,7 @@ export interface components {
             retryable: boolean;
         };
         /** @enum {string} */
-        MediaJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost" | "cloneCheck" | "createCharacter" | "cloneStartingImage" | "cloneVideo" | "agentTask";
-        MediaJobResult: components["schemas"]["CloneCheckResult"] | components["schemas"]["CharacterResult"] | components["schemas"]["StartingImageResult"] | components["schemas"]["CloneVideoResult"] | components["schemas"]["AgentTaskResult"];
+        MediaJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost";
         /** @enum {string} */
         MediaJobStatus: "queued" | "running" | "waiting_provider" | "retrying" | "rejected" | "completed" | "failed" | "cancelled";
         OverlayRequest: {
@@ -2066,15 +1842,6 @@ export interface components {
         };
         /** @enum {string} */
         SocialVideoPlatform: "tiktok" | "instagram";
-        StartingImageResult: {
-            /** @enum {string} */
-            kind: "starting_image";
-            assetId: string;
-            /** Format: uri */
-            url?: string;
-            characterId: string;
-            sourceFingerprint: string;
-        };
         SubscriptionCreateRequest: {
             email: string;
         };
@@ -2164,8 +1931,6 @@ export interface components {
             /** Format: int64 */
             createdAt: number;
         };
-        /** @enum {string} */
-        VideoCloneModel: "seedance" | "kling-motion-control";
         VideoResponse: {
             data: components["schemas"]["Video"];
         };
@@ -2283,84 +2048,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountDeleteResponse"];
-                };
-            };
-        };
-    };
-    createAgentTask: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateAgentTaskRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentTaskAccepted"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
-            429: {
-                headers: {
-                    "Retry-After"?: number;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    listAgentTaskEvents: {
-        parameters: {
-            query: {
-                id: string;
-                after?: string;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgentTaskEventPage"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -2648,41 +2335,6 @@ export interface operations {
             };
         };
     };
-    createCharacter: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateCharacterRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
     checkSpec: {
         parameters: {
             query?: never;
@@ -2862,111 +2514,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DistributionJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    cloneCheck: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CloneCheckRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    cloneStartingImage: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CloneStartingImageRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    cloneVideo: {
-        parameters: {
-            query?: never;
-            header: {
-                "Idempotency-Key": string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CloneVideoRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaJob"];
                 };
             };
             /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
