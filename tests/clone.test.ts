@@ -88,7 +88,7 @@ describe("clone check", () => {
 });
 
 describe("clone run", () => {
-  test("happy path chains download -> check -> character -> starting-image -> video -> poll", async () => {
+  test("with --character chains download -> check -> starting-image -> video -> poll, using the character id (no createCharacter call)", async () => {
     const calls: string[] = [];
 
     globalThis.fetch = (async (input, init) => {
@@ -117,12 +117,12 @@ describe("clone run", () => {
         });
       }
       if (request.url.endsWith("/v1/characters")) {
-        return jsonResponse({
-          imageUrl: "https://cdn.vidjutsu.ai/staged/character.png",
-          model: "nano-banana",
-        });
+        throw new Error("clone run must not create a new character when --character is given");
       }
       if (request.url.endsWith("/v1/clones/starting-image")) {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        expect(body.characterId).toBe("char_abc123");
+        expect(body.characterImageUrl).toBeUndefined();
         return jsonResponse({
           imageUrl: "https://cdn.vidjutsu.ai/staged/starting-frame.png",
           model: "nano-banana",
@@ -142,17 +142,32 @@ describe("clone run", () => {
     }) as typeof fetch;
 
     await runCommand(cloneCommand, {
-      rawArgs: ["run", "https://www.tiktok.com/@creator/video/1"],
+      rawArgs: ["run", "https://www.tiktok.com/@creator/video/1", "--character", "char_abc123"],
     });
 
     expect(calls).toEqual([
       "https://vidjutsu.test/v1/videos/download/tiktok",
       "https://vidjutsu.test/v1/clones/check",
-      "https://vidjutsu.test/v1/characters",
       "https://vidjutsu.test/v1/clones/starting-image",
       "https://vidjutsu.test/v1/clones/video",
       "https://vidjutsu.test/v1/clones/video/clone_task_1",
     ]);
+  });
+
+  test("without --character exits nonzero and makes no requests", async () => {
+    globalThis.fetch = (async () => {
+      throw new Error("no request should be made without --character");
+    }) as typeof fetch;
+
+    const exit = mockExit();
+
+    await expect(
+      runCommand(cloneCommand, {
+        rawArgs: ["run", "https://www.tiktok.com/@creator/video/1"],
+      }),
+    ).rejects.toThrow();
+
+    expect(exit.calls).toEqual([1]);
   });
 
   test("stops before generating when verdict is weak, unless --force", async () => {
@@ -190,7 +205,7 @@ describe("clone run", () => {
 
     await expect(
       runCommand(cloneCommand, {
-        rawArgs: ["run", "https://www.tiktok.com/@creator/video/1"],
+        rawArgs: ["run", "https://www.tiktok.com/@creator/video/1", "--character", "char_abc123"],
       }),
     ).rejects.toThrow();
 
@@ -199,5 +214,47 @@ describe("clone run", () => {
       "https://vidjutsu.test/v1/videos/download/tiktok",
       "https://vidjutsu.test/v1/clones/check",
     ]);
+  });
+});
+
+describe("clone character list", () => {
+  test("prints ids, model, createdAt from an array response", async () => {
+    globalThis.fetch = (async () =>
+      jsonResponse([
+        { id: "char_abc123", model: "nano-banana", createdAt: "2026-07-01T00:00:00.000Z" },
+        { id: "char_def456", model: "nano-banana", createdAt: "2026-07-02T00:00:00.000Z" },
+      ])) as typeof fetch;
+
+    const logs: string[] = [];
+    const originalLog = console.log;
+    console.log = (msg: string) => logs.push(msg);
+
+    try {
+      await runCommand(cloneCommand, { rawArgs: ["character", "list"] });
+    } finally {
+      console.log = originalLog;
+    }
+
+    expect(logs.some((l) => l.includes("char_abc123"))).toBe(true);
+    expect(logs.some((l) => l.includes("char_def456"))).toBe(true);
+  });
+
+  test("prints ids from a wrapped { characters: [...] } response", async () => {
+    globalThis.fetch = (async () =>
+      jsonResponse({
+        characters: [{ id: "char_wrapped", model: "nano-banana", createdAt: "2026-07-03T00:00:00.000Z" }],
+      })) as typeof fetch;
+
+    const logs: string[] = [];
+    const originalLog = console.log;
+    console.log = (msg: string) => logs.push(msg);
+
+    try {
+      await runCommand(cloneCommand, { rawArgs: ["character", "list"] });
+    } finally {
+      console.log = originalLog;
+    }
+
+    expect(logs.some((l) => l.includes("char_wrapped"))).toBe(true);
   });
 });
