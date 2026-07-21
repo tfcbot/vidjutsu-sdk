@@ -21,8 +21,6 @@ const main = defineCommand({
     update: () => import("./commands/update").then((m) => m.default),
     clips: () => import("./commands/clips").then((m) => m.default),
     jobs: () => import("./commands/jobs").then((m) => m.default),
-    clone: () => import("./commands/clone").then((m) => m.default),
-    character: () => import("./commands/character").then((m) => m.default),
 
     // --- Generated from OpenAPI spec ---
     watch: () => import("./commands/generated/watch").then((m) => m.default),
