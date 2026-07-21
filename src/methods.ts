@@ -74,14 +74,10 @@ export interface VidJutsuMethods {
   getCheckoutStatus(query?: QueryParams<"/v1/credits/status", "get">): ReturnType<Client["GET"]>;
   /** Burn fine-print disclaimer onto video */
   createDisclaimer(body: ReqBody<"/v1/disclaimer", "post">): ReturnType<Client["POST"]>;
-  /** Inspect a distribution job Auth required. */
-  getDistributionJob(query?: QueryParams<"/v1/distribution/jobs", "get">): ReturnType<Client["GET"]>;
   /** Extract from media Auth required. 5 credits. */
   extractMedia(body: ReqBody<"/v1/extract", "post">): ReturnType<Client["POST"]>;
   /** API info Public endpoint. */
   getInfo(): ReturnType<Client["GET"]>;
-  /** Inspect a durable VidJutsu media job Auth required. */
-  getJob(query?: QueryParams<"/v1/jobs", "get">): ReturnType<Client["GET"]>;
   /** Burn text overlay onto video Auth required. 5 credits. */
   createOverlay(body: ReqBody<"/v1/overlay", "post">): ReturnType<Client["POST"]>;
   /** Create post Auth required. */
@@ -144,8 +140,6 @@ export interface VidJutsuMethods {
   uploadFromUrl(body: ReqBody<"/v1/upload/url", "post">): ReturnType<Client["POST"]>;
   /** Get daily usage */
   getUsage(): ReturnType<Client["GET"]>;
-  /** Add a video from an uploaded asset or direct MP4 URL Auth required. */
-  addVideo(body: ReqBody<"/v1/videos/add", "post">): ReturnType<Client["POST"]>;
   /** Import an Instagram video into VidJutsu Auth required. 1 credits. */
   downloadInstagramVideo(body: ReqBody<"/v1/videos/download/instagram", "post">): ReturnType<Client["POST"]>;
   /** Import a TikTok video into VidJutsu Auth required. 1 credits. */
@@ -246,17 +240,11 @@ export function bindMethods(client: Client): VidJutsuMethods {
     createDisclaimer(body) {
       return client.POST("/v1/disclaimer" as any, { body } as any);
     },
-    getDistributionJob(query) {
-      return client.GET("/v1/distribution/jobs" as any, { params: { query } } as any);
-    },
     extractMedia(body) {
       return client.POST("/v1/extract" as any, { body } as any);
     },
     getInfo() {
       return client.GET("/v1/info" as any, {} as any);
-    },
-    getJob(query) {
-      return client.GET("/v1/jobs" as any, { params: { query } } as any);
     },
     createOverlay(body) {
       return client.POST("/v1/overlay" as any, { body } as any);
@@ -350,9 +338,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     getUsage() {
       return client.GET("/v1/usage" as any, {} as any);
-    },
-    addVideo(body) {
-      return client.POST("/v1/videos/add" as any, { body } as any);
     },
     downloadInstagramVideo(body) {
       return client.POST("/v1/videos/download/instagram" as any, { body } as any);

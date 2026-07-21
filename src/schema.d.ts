@@ -447,23 +447,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/distribution/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Inspect a distribution job */
-        get: operations["getDistributionJob"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/extract": {
         parameters: {
             query?: never;
@@ -493,23 +476,6 @@ export interface paths {
         };
         /** API info */
         get: operations["getInfo"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/jobs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Inspect a durable VidJutsu media job */
-        get: operations["getJob"];
         put?: never;
         post?: never;
         delete?: never;
@@ -958,26 +924,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/videos/add": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Add a video from an uploaded asset or direct MP4 URL
-         * @description Creates or reuses a normalized Vidjutsu video. Provider ingest, downloading, indexing, and storage are implementation details.
-         */
-        post: operations["addVideo"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/videos/download/instagram": {
         parameters: {
             query?: never;
@@ -1097,10 +1043,6 @@ export interface components {
             accountId: string;
             /** @enum {boolean} */
             updated: true;
-        };
-        AddVideoRequest: {
-            source: components["schemas"]["VideoSource"];
-            dryRun?: boolean;
         };
         AgentClaimCompleteRequest: {
             claim_token: string;
@@ -1268,11 +1210,6 @@ export interface components {
             assetId: string;
             /** @enum {boolean} */
             updated: true;
-        };
-        AssetVideoSource: {
-            /** @enum {string} */
-            kind: "asset";
-            assetId: string;
         };
         BearerAuth: {
             /**
@@ -1533,26 +1470,6 @@ export interface components {
             /** @description CDN URL of the disclaimed video */
             resultUrl: string;
         };
-        DistributionJob: {
-            jobId: string;
-            operation: components["schemas"]["DistributionJobOperation"];
-            status: components["schemas"]["DistributionJobStatus"];
-            outputs?: components["schemas"]["JobOutputResource"][];
-            error?: components["schemas"]["DistributionJobError"];
-            /** Format: int64 */
-            createdAt: number;
-            /** Format: int64 */
-            completedAt?: number;
-        };
-        DistributionJobError: {
-            code: string;
-            message: string;
-            retryable: boolean;
-        };
-        /** @enum {string} */
-        DistributionJobOperation: "addVideo" | "schedulePost";
-        /** @enum {string} */
-        DistributionJobStatus: "queued" | "running" | "completed" | "failed" | "cancelled";
         EditorProject: {
             projectId: string;
             clientId: string;
@@ -1659,12 +1576,6 @@ export interface components {
             /** @description Provider model id that produced the image. */
             model: string;
         };
-        HttpVideoSource: {
-            /** @enum {string} */
-            kind: "http";
-            /** Format: uri */
-            url: string;
-        };
         InfoResponse: {
             name: string;
             version: string;
@@ -1675,36 +1586,10 @@ export interface components {
             /** @description Per-endpoint daily request limits (fixed window, resets 00:00 UTC). */
             dailyLimits: components["schemas"]["DailyLimits"];
         };
-        JobOutputResource: {
-            /** @enum {string} */
-            kind: "video" | "post" | "image" | "character" | "clone_check";
-            id: string;
-        };
         ListCharactersResponse: {
             /** @description Characters owned by the caller, most recent first. */
             characters: components["schemas"]["Character"][];
         };
-        MediaJob: {
-            jobId: string;
-            parentJobId?: string;
-            operation: components["schemas"]["MediaJobOperation"];
-            status: components["schemas"]["MediaJobStatus"];
-            outputs?: components["schemas"]["JobOutputResource"][];
-            error?: components["schemas"]["MediaJobError"];
-            /** Format: int64 */
-            createdAt: number;
-            /** Format: int64 */
-            completedAt?: number;
-        };
-        MediaJobError: {
-            code: string;
-            message: string;
-            retryable: boolean;
-        };
-        /** @enum {string} */
-        MediaJobOperation: "addVideo" | "schedulePost";
-        /** @enum {string} */
-        MediaJobStatus: "queued" | "running" | "waiting_provider" | "retrying" | "rejected" | "completed" | "failed" | "cancelled";
         OverlayRequest: {
             /** @description URL of the source video */
             videoUrl: string;
@@ -2002,24 +1887,6 @@ export interface components {
         VerifyRequestResponse: {
             sent: boolean;
         };
-        Video: {
-            videoId: string;
-            /** @enum {string} */
-            sourceKind: "asset" | "http";
-            status: components["schemas"]["VideoStatus"];
-            title?: string;
-            /** Format: double */
-            durationSeconds?: number;
-            fingerprint?: string;
-            /** Format: int64 */
-            createdAt: number;
-        };
-        VideoResponse: {
-            data: components["schemas"]["Video"];
-        };
-        VideoSource: components["schemas"]["AssetVideoSource"] | components["schemas"]["HttpVideoSource"];
-        /** @enum {string} */
-        VideoStatus: "processing" | "ready" | "failed";
         WatchRequest: {
             /** @description URL of the media to analyze */
             mediaUrl: string;
@@ -2919,37 +2786,6 @@ export interface operations {
             };
         };
     };
-    getDistributionJob: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DistributionJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
     extractMedia: {
         parameters: {
             query?: never;
@@ -3009,37 +2845,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InfoResponse"];
-                };
-            };
-        };
-    };
-    getJob: {
-        parameters: {
-            query: {
-                id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MediaJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
@@ -4077,41 +3882,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UsageResponse"];
-                };
-            };
-        };
-    };
-    addVideo: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Idempotency-Key"?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddVideoRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DistributionJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
                 };
             };
         };
