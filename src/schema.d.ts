@@ -635,7 +635,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape Instagram post or reel
-         * @description Single Instagram post or reel + media URLs. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Single Instagram post or reel + media URLs. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeInstagramPost"];
         delete?: never;
@@ -675,7 +675,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape Instagram profile
-         * @description Public Instagram profile + recent reels. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Public Instagram profile + recent reels. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeInstagramProfile"];
         delete?: never;
@@ -695,7 +695,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape Instagram user posts
-         * @description Paginated posts for an Instagram profile. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Paginated posts for an Instagram profile. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeInstagramUserPosts"];
         delete?: never;
@@ -715,7 +715,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape Instagram user reels
-         * @description Paginated reels for an Instagram profile. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Paginated reels for an Instagram profile. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeInstagramUserReels"];
         delete?: never;
@@ -735,7 +735,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape TikTok profile
-         * @description Fetch public TikTok profile data via Scrape Creators. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Fetch public TikTok profile data via Scrape Creators. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeTikTokProfile"];
         delete?: never;
@@ -755,7 +755,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape TikTok profile videos
-         * @description Paginated videos for a TikTok profile. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Paginated videos for a TikTok profile. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeTikTokProfileVideos"];
         delete?: never;
@@ -795,7 +795,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape TikTok trending feed
-         * @description Trending feed by region. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Trending feed by region. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeTikTokTrending"];
         delete?: never;
@@ -815,7 +815,7 @@ export interface paths {
         put?: never;
         /**
          * Scrape TikTok video
-         * @description Single TikTok video metadata + media URLs. Counts as 1 request against the shared scrape group (500/day); staging media with download_media does not consume extra quota.
+         * @description Single TikTok video metadata + media URLs. Counts as 1 request against the shared scrape group (500/day).
          */
         post: operations["scrapeTikTokVideo"];
         delete?: never;
@@ -1845,45 +1845,25 @@ export interface components {
         ScrapeInstagramPostRequest: {
             /** @description Instagram post or reel URL */
             url: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeInstagramProfileRequest: {
             /** @description Instagram username (without @) */
             handle: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeInstagramUserPostsRequest: {
             /** @description Instagram username */
             handle: string;
             /** @description Pagination cursor */
             cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeInstagramUserReelsRequest: {
             /** @description Instagram username */
             handle: string;
             /** @description Pagination cursor */
             cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeResponse: {
-            /** @description Pass-through response from Scrape Creators. Shape varies per endpoint. When download_media was true, all media URLs are replaced with VidJutsu CDN URLs. */
+            /** @description Pass-through response from Scrape Creators. Shape varies per endpoint. Media URLs are the raw provider source URLs; scrape never stages media. To stage a specific video's file, call the single-video download endpoint. */
             data: unknown;
         };
         ScrapeTikTokProfileRequest: {
@@ -1891,22 +1871,12 @@ export interface components {
             handle: string;
             /** @description Reduce response size by trimming large fields */
             trim?: boolean;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeTikTokProfileVideosRequest: {
             /** @description TikTok username */
             handle: string;
             /** @description Pagination cursor */
             cursor?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeTikTokSearchUsersRequest: {
             /** @description Search query */
@@ -1917,11 +1887,6 @@ export interface components {
         ScrapeTikTokTrendingRequest: {
             /** @description Two-letter ISO country code (e.g. 'us') */
             country?: string;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeTikTokVideoCommentsRequest: {
             /** @description TikTok video URL */
@@ -1934,11 +1899,6 @@ export interface components {
             url: string;
             /** @description Reduce response size */
             trim?: boolean;
-            /**
-             * @description When true, media URLs in the response are staged through VidJutsu CDN and the response contains ONLY VidJutsu URLs. Defaults to false (raw source URLs returned as-is).
-             * @default false
-             */
-            download_media: boolean;
         };
         ScrapeTikTokVideoTranscriptRequest: {
             /** @description TikTok video URL */
