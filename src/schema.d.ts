@@ -287,66 +287,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/clips/broll": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a B-roll-treated clip artifact
-         * @description Creates a new immutable clip whose parent is the input clip. Assets, edit planning, and render providers remain internal.
-         */
-        post: operations["addClipBroll"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/clips/captions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Create a captioned clip artifact
-         * @description Creates a new immutable clip whose parent is the input clip.
-         */
-        post: operations["addClipCaptions"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/clips/generate": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Generate a bounded batch of 9:16 clips from a video source or video ID
-         * @description One semantic job may resolve the source, transcribe it, find moments, and reframe clips. Returns a durable job; provider and model choices remain internal.
-         */
-        post: operations["generateClips"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/clones/check": {
         parameters: {
             query?: never;
@@ -501,23 +441,6 @@ export interface paths {
          * @description Burns a fine-print disclaimer centered at the bottom of a video using FFmpeg ASS subtitles. Use for FTC-style disclosures like results-not-typical, paid-endorsement, or AI-generated labels. Returns CDN URL of the result. Daily limit: 50/day (resets 00:00 UTC).
          */
         post: operations["createDisclaimer"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/distribution/clips": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List generated clips or get one by ID */
-        get: operations["listOrGetDistributionClips"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1175,20 +1098,6 @@ export interface components {
             /** @enum {boolean} */
             updated: true;
         };
-        AddBrollRequest: {
-            clipId: string;
-            mode: components["schemas"]["BrollMode"];
-            /** @description Optional approved asset IDs. Required when mode is supplied. */
-            assetIds?: string[];
-            intent?: string;
-            dryRun?: boolean;
-        };
-        AddCaptionsRequest: {
-            clipId: string;
-            preset?: string;
-            language?: string;
-            dryRun?: boolean;
-        };
         AddVideoRequest: {
             source: components["schemas"]["VideoSource"];
             dryRun?: boolean;
@@ -1377,8 +1286,6 @@ export interface components {
              */
             scheme: "bearer";
         };
-        /** @enum {string} */
-        BrollMode: "auto" | "supplied" | "none";
         Character: {
             /** @description Persisted character id (char_...). */
             id: string;
@@ -1422,32 +1329,6 @@ export interface components {
         CheckRulesUpdateRequest: {
             rules: string[];
         };
-        Clip: {
-            clipId: string;
-            rootVideoId: string;
-            parentClipId?: string;
-            transformKind: components["schemas"]["ClipTransformKind"];
-            status: components["schemas"]["ClipStatus"];
-            /** @enum {string} */
-            aspectRatio: "9:16";
-            /** Format: double */
-            durationSeconds?: number;
-            assetId?: string;
-            /** Format: uri */
-            url?: string;
-            /** Format: int64 */
-            createdAt: number;
-        };
-        ClipListResponse: {
-            data: components["schemas"]["Clip"][];
-        };
-        ClipResponse: {
-            data: components["schemas"]["Clip"];
-        };
-        /** @enum {string} */
-        ClipStatus: "processing" | "ready" | "failed";
-        /** @enum {string} */
-        ClipTransformKind: "generated" | "timestamps" | "captions" | "broll";
         CloneCheckRequest: {
             /**
              * Format: uri
@@ -1669,7 +1550,7 @@ export interface components {
             retryable: boolean;
         };
         /** @enum {string} */
-        DistributionJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost";
+        DistributionJobOperation: "addVideo" | "schedulePost";
         /** @enum {string} */
         DistributionJobStatus: "queued" | "running" | "completed" | "failed" | "cancelled";
         EditorProject: {
@@ -1769,22 +1650,6 @@ export interface components {
             audio?: components["schemas"]["ExtractAudio"];
             metadata?: components["schemas"]["ExtractMetadata"];
         };
-        GenerateClipsRequest: {
-            /** @description Provide source or videoId. Exactly one is required. */
-            source?: Omit<components["schemas"]["VideoSource"], "kind">;
-            /** @description Existing normalized Vidjutsu video. Provide this or source, not both. */
-            videoId?: string;
-            /** @enum {string} */
-            aspectRatio: "9:16";
-            /** Format: int32 */
-            count: number;
-            /** Format: int32 */
-            minDurationSeconds?: number;
-            /** Format: int32 */
-            maxDurationSeconds?: number;
-            intent?: string;
-            dryRun?: boolean;
-        };
         GeneratedImageResponse: {
             /**
              * Format: uri
@@ -1812,7 +1677,7 @@ export interface components {
         };
         JobOutputResource: {
             /** @enum {string} */
-            kind: "video" | "clip" | "post" | "image" | "character" | "clone_check";
+            kind: "video" | "post" | "image" | "character" | "clone_check";
             id: string;
         };
         ListCharactersResponse: {
@@ -1837,7 +1702,7 @@ export interface components {
             retryable: boolean;
         };
         /** @enum {string} */
-        MediaJobOperation: "addVideo" | "generateClips" | "addCaptions" | "addBroll" | "schedulePost";
+        MediaJobOperation: "addVideo" | "schedulePost";
         /** @enum {string} */
         MediaJobStatus: "queued" | "running" | "waiting_provider" | "retrying" | "rejected" | "completed" | "failed" | "cancelled";
         OverlayRequest: {
@@ -2783,111 +2648,6 @@ export interface operations {
             };
         };
     };
-    addClipBroll: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Idempotency-Key"?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddBrollRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DistributionJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    addClipCaptions: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Idempotency-Key"?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AddCaptionsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DistributionJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    generateClips: {
-        parameters: {
-            query?: never;
-            header?: {
-                "Idempotency-Key"?: string;
-            };
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["GenerateClipsRequest"];
-            };
-        };
-        responses: {
-            /** @description The request has been accepted for processing, but processing has not yet completed. */
-            202: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DistributionJob"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
     cloneCheck: {
         parameters: {
             query?: never;
@@ -3191,38 +2951,6 @@ export interface operations {
             429: {
                 headers: {
                     "Retry-After"?: number;
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiError"];
-                };
-            };
-        };
-    };
-    listOrGetDistributionClips: {
-        parameters: {
-            query?: {
-                id?: string;
-                videoId?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description The request has succeeded. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ClipResponse"] | components["schemas"]["ClipListResponse"];
-                };
-            };
-            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
-            403: {
-                headers: {
                     [name: string]: unknown;
                 };
                 content: {

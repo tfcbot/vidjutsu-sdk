@@ -58,12 +58,6 @@ export interface VidJutsuMethods {
   getCheckRules(): ReturnType<Client["GET"]>;
   /** Update check rules Auth required. */
   updateCheckRules(body: ReqBody<"/v1/check/rules", "put">): ReturnType<Client["PUT"]>;
-  /** Create a B-roll-treated clip artifact Auth required. */
-  addClipBroll(body: ReqBody<"/v1/clips/broll", "post">): ReturnType<Client["POST"]>;
-  /** Create a captioned clip artifact Auth required. */
-  addClipCaptions(body: ReqBody<"/v1/clips/captions", "post">): ReturnType<Client["POST"]>;
-  /** Generate a bounded batch of 9:16 clips from a video source or video ID Auth required. */
-  generateClips(body: ReqBody<"/v1/clips/generate", "post">): ReturnType<Client["POST"]>;
   /** Evaluate whether a source video can be cloned reliably */
   cloneCheck(body: ReqBody<"/v1/clones/check", "post">): ReturnType<Client["POST"]>;
   /** Create a character-swapped starting frame */
@@ -80,8 +74,6 @@ export interface VidJutsuMethods {
   getCheckoutStatus(query?: QueryParams<"/v1/credits/status", "get">): ReturnType<Client["GET"]>;
   /** Burn fine-print disclaimer onto video */
   createDisclaimer(body: ReqBody<"/v1/disclaimer", "post">): ReturnType<Client["POST"]>;
-  /** List generated clips or get one by ID Auth required. */
-  listOrGetDistributionClips(query?: QueryParams<"/v1/distribution/clips", "get">): ReturnType<Client["GET"]>;
   /** Inspect a distribution job Auth required. */
   getDistributionJob(query?: QueryParams<"/v1/distribution/jobs", "get">): ReturnType<Client["GET"]>;
   /** Extract from media Auth required. 5 credits. */
@@ -230,15 +222,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     updateCheckRules(body) {
       return client.PUT("/v1/check/rules" as any, { body } as any);
     },
-    addClipBroll(body) {
-      return client.POST("/v1/clips/broll" as any, { body } as any);
-    },
-    addClipCaptions(body) {
-      return client.POST("/v1/clips/captions" as any, { body } as any);
-    },
-    generateClips(body) {
-      return client.POST("/v1/clips/generate" as any, { body } as any);
-    },
     cloneCheck(body) {
       return client.POST("/v1/clones/check" as any, { body } as any);
     },
@@ -262,9 +245,6 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     createDisclaimer(body) {
       return client.POST("/v1/disclaimer" as any, { body } as any);
-    },
-    listOrGetDistributionClips(query) {
-      return client.GET("/v1/distribution/clips" as any, { params: { query } } as any);
     },
     getDistributionJob(query) {
       return client.GET("/v1/distribution/jobs" as any, { params: { query } } as any);
