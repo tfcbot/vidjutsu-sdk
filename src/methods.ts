@@ -46,6 +46,8 @@ export interface VidJutsuMethods {
   confirmVerification(body: ReqBody<"/v1/auth/verify/confirm", "post">): ReturnType<Client["POST"]>;
   /** Request email verification code Public endpoint. */
   requestVerification(body: ReqBody<"/v1/auth/verify/request", "post">): ReturnType<Client["POST"]>;
+  /** Create a reusable generated character image */
+  createCharacter(body: ReqBody<"/v1/characters", "post">): ReturnType<Client["POST"]>;
   /** Check spec Auth required. 5 credits. */
   checkSpec(body: ReqBody<"/v1/check", "post">): ReturnType<Client["POST"]>;
   /** Get check rules Auth required. */
@@ -58,6 +60,14 @@ export interface VidJutsuMethods {
   addClipCaptions(body: ReqBody<"/v1/clips/captions", "post">): ReturnType<Client["POST"]>;
   /** Generate a bounded batch of 9:16 clips from a video source or video ID Auth required. */
   generateClips(body: ReqBody<"/v1/clips/generate", "post">): ReturnType<Client["POST"]>;
+  /** Evaluate whether a source video can be cloned reliably */
+  cloneCheck(body: ReqBody<"/v1/clones/check", "post">): ReturnType<Client["POST"]>;
+  /** Create a character-swapped starting frame */
+  cloneStartingImage(body: ReqBody<"/v1/clones/starting-image", "post">): ReturnType<Client["POST"]>;
+  /** Clone source motion with Kling motion control or Seedance */
+  cloneVideo(body: ReqBody<"/v1/clones/video", "post">): ReturnType<Client["POST"]>;
+  /** Poll a clone video task */
+  getCloneVideo(id: string): ReturnType<Client["GET"]>;
   /** Check prompt compliance */
   checkCompliancePrompt(body: ReqBody<"/v1/compliance/prompt", "post">): ReturnType<Client["POST"]>;
   /** Check video compliance */
@@ -198,6 +208,9 @@ export function bindMethods(client: Client): VidJutsuMethods {
     requestVerification(body) {
       return client.POST("/v1/auth/verify/request" as any, { body } as any);
     },
+    createCharacter(body) {
+      return client.POST("/v1/characters" as any, { body } as any);
+    },
     checkSpec(body) {
       return client.POST("/v1/check" as any, { body } as any);
     },
@@ -215,6 +228,18 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     generateClips(body) {
       return client.POST("/v1/clips/generate" as any, { body } as any);
+    },
+    cloneCheck(body) {
+      return client.POST("/v1/clones/check" as any, { body } as any);
+    },
+    cloneStartingImage(body) {
+      return client.POST("/v1/clones/starting-image" as any, { body } as any);
+    },
+    cloneVideo(body) {
+      return client.POST("/v1/clones/video" as any, { body } as any);
+    },
+    getCloneVideo(id) {
+      return client.GET("/v1/clones/video/{id}" as any, { params: {path: { id }} } as any);
     },
     checkCompliancePrompt(body) {
       return client.POST("/v1/compliance/prompt" as any, { body } as any);

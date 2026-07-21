@@ -198,6 +198,7 @@ function emit(ops: Operation[]): string {
   for (const op of ops) {
     const meta = ROUTE_META[op.operationId];
     const queryParams = op.parameters.filter((p) => p.in === "query");
+    const pathParams = op.parameters.filter((p) => p.in === "path");
 
     // JSDoc
     const jsdocParts = [op.summary || op.operationId];
@@ -213,6 +214,11 @@ function emit(ops: Operation[]): string {
     const methodLower = op.method.toLowerCase();
     const args: string[] = [];
     let returnType: string;
+
+    // Path params come first as individual positional args (in path order).
+    for (const p of pathParams) {
+      args.push(`${p.name}: string`);
+    }
 
     if (op.isBinary) {
       args.push("body: Blob | ArrayBuffer | ReadableStream");
@@ -243,30 +249,48 @@ function emit(ops: Operation[]): string {
   for (const op of ops) {
     const pathLiteral = op.path;
     const queryParams = op.parameters.filter((p) => p.in === "query");
+    const pathParams = op.parameters.filter((p) => p.in === "path");
+    const pathArgNames = pathParams.map((p) => p.name);
+    const pathParamsObj = pathParams.length > 0 ? `, path: { ${pathParams.map((p) => p.name).join(", ")} }` : "";
+    const callArgs = [...pathArgNames];
 
     if (op.isBinary) {
       // Binary upload — pass body directly with custom serializer
-      lines.push(`    ${op.operationId}(body) {`);
+      callArgs.push("body");
+      lines.push(`    ${op.operationId}(${callArgs.join(", ")}) {`);
       lines.push(`      return client.POST("${pathLiteral}" as any, {`);
       lines.push(`        body: body as any,`);
       lines.push(`        bodySerializer: (b: any) => b,`);
       lines.push(`        headers: { "Content-Type": "application/octet-stream" },`);
+      if (pathParamsObj) lines.push(`        params: {${pathParamsObj.replace(/^, /, "")}},`);
       lines.push(`      } as any);`);
       lines.push(`    },`);
     } else if (op.requestBodyRef && queryParams.length > 0) {
-      // Body + query params
-      lines.push(`    ${op.operationId}(body, query) {`);
-      lines.push(`      return client.${op.method}("${pathLiteral}" as any, { body, params: { query } } as any);`);
+      // Body + query params (+ optional path params)
+      callArgs.push("body", "query");
+      lines.push(`    ${op.operationId}(${callArgs.join(", ")}) {`);
+      lines.push(`      return client.${op.method}("${pathLiteral}" as any, { body, params: { query${pathParamsObj} } } as any);`);
       lines.push(`    },`);
     } else if (op.requestBodyRef) {
-      // Body only
-      lines.push(`    ${op.operationId}(body) {`);
-      lines.push(`      return client.${op.method}("${pathLiteral}" as any, { body } as any);`);
+      // Body only (+ optional path params)
+      callArgs.push("body");
+      lines.push(`    ${op.operationId}(${callArgs.join(", ")}) {`);
+      if (pathParamsObj) {
+        lines.push(`      return client.${op.method}("${pathLiteral}" as any, { body, params: {${pathParamsObj.replace(/^, /, "")}} } as any);`);
+      } else {
+        lines.push(`      return client.${op.method}("${pathLiteral}" as any, { body } as any);`);
+      }
       lines.push(`    },`);
     } else if (queryParams.length > 0) {
-      // Query params only
-      lines.push(`    ${op.operationId}(query) {`);
-      lines.push(`      return client.${op.method}("${pathLiteral}" as any, { params: { query } } as any);`);
+      // Query params only (+ optional path params)
+      callArgs.push("query");
+      lines.push(`    ${op.operationId}(${callArgs.join(", ")}) {`);
+      lines.push(`      return client.${op.method}("${pathLiteral}" as any, { params: { query${pathParamsObj} } } as any);`);
+      lines.push(`    },`);
+    } else if (pathParams.length > 0) {
+      // Path params only
+      lines.push(`    ${op.operationId}(${callArgs.join(", ")}) {`);
+      lines.push(`      return client.${op.method}("${pathLiteral}" as any, { params: {${pathParamsObj.replace(/^, /, "")}} } as any);`);
       lines.push(`    },`);
     } else {
       // No args

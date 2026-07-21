@@ -199,6 +199,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/characters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a reusable generated character image
+         * @description Generates a photoreal character identity image from a text prompt, optionally guided by one HTTPS reference image. Returns a CDN-hosted image URL to feed into the starting-image step. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
+         */
+        post: operations["createCharacter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/check": {
         parameters: {
             query?: never;
@@ -297,6 +317,86 @@ export interface paths {
          * @description One semantic job may resolve the source, transcribe it, find moments, and reframe clips. Returns a durable job; provider and model choices remain internal.
          */
         post: operations["generateClips"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate whether a source video can be cloned reliably
+         * @description Runs a synchronous, deterministic cloneability analysis of a staged source video and returns a verdict (strong, possible, or weak), a 0-100 score, and the evidence behind them, so the agent can branch on the result, for example stopping on a weak verdict. The videoUrl must be public HTTPS and staged first: provider CDNs cannot fetch TikTok or Instagram links directly, so download the source with /v1/videos/download/tiktok or /v1/videos/download/instagram before checking it. The source video must be at most ~2 minutes long. Shares the daily clone admission limit.
+         */
+        post: operations["cloneCheck"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/starting-image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a character-swapped starting frame
+         * @description Composes a clean starting frame for a clone by applying the prompt to the character image, optionally grounded in the source video's first frame. The returned image is guaranteed to be a clean cinematic frame with no text overlays, captions, subtitles, watermarks, or platform UI, regardless of what is present in the source video or requested prompt. All URLs must be public HTTPS. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
+         */
+        post: operations["cloneStartingImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Clone source motion with Kling motion control or Seedance
+         * @description Submits an asynchronous motion-clone generation. The default kling model uses Kling motion control to puppet the starting-image identity with the source video's motion, keeping the original sound; model="seedance" is the alternate model, rendering 9:16 at 480p via video-edit. All URLs must be public HTTPS. Source clips are capped at 15 seconds; a longer sourceVideoUrl is rejected with a 422 and an error of "video_too_long". Returns 202 with a task id to poll via GET /v1/clones/video/{id}.
+         */
+        post: operations["cloneVideo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/clones/video/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll a clone video task
+         * @description Returns the current status of a clone video task owned by the caller. While status is "processing", poll again later; on "completed" the videoUrl field carries the HTTPS result URL, and on "failed" the error field explains why. Unknown ids and other tenants' ids return 404. Status reads are not billed.
+         */
+        get: operations["getCloneVideo"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1308,6 +1408,89 @@ export interface components {
         ClipStatus: "processing" | "ready" | "failed";
         /** @enum {string} */
         ClipTransformKind: "generated" | "timestamps" | "captions" | "broll";
+        CloneCheckRequest: {
+            /**
+             * Format: uri
+             * @description Public HTTPS URL of the source video to evaluate. http:// URLs are rejected.
+             */
+            videoUrl: string;
+            /** @description Optional freeform context about the intended clone (product, character, constraints) to sharpen the analysis. */
+            context?: string;
+        };
+        CloneCheckResponse: {
+            /** @description Overall cloneability verdict: "strong" clones reliably, "possible" may need retries or manual QA, "weak" is unlikely to clone well. */
+            verdict: components["schemas"]["CloneCheckVerdict"];
+            /**
+             * Format: int32
+             * @description Cloneability score from 0 (unusable) to 100 (ideal source).
+             */
+            score: number;
+            /** @description Concrete observations from the video that support the verdict. */
+            evidence: string[];
+            /** @description Provider model id that produced the analysis. */
+            model: string;
+        };
+        /** @enum {string} */
+        CloneCheckVerdict: "strong" | "possible" | "weak";
+        CloneStartingImageRequest: {
+            /**
+             * Format: uri
+             * @description Public HTTPS URL of the character identity image. http:// URLs are rejected.
+             */
+            characterImageUrl: string;
+            /** @description Instructions for composing the starting frame (pose, framing, scene). */
+            prompt: string;
+            /**
+             * Format: uri
+             * @description Optional public HTTPS URL of the source video whose opening frame should ground the composition.
+             */
+            sourceVideoUrl?: string;
+        };
+        CloneVideoAccepted: {
+            /** @description Clone task id. Poll GET /v1/clones/video/{id} with it. */
+            id: string;
+            /**
+             * @description Always "processing" on acceptance.
+             * @enum {string}
+             */
+            status: "processing";
+        };
+        /** @enum {string} */
+        CloneVideoModel: "seedance" | "kling";
+        CloneVideoRequest: {
+            /**
+             * Format: uri
+             * @description Public HTTPS URL of the starting frame that carries the target identity. http:// URLs are rejected.
+             */
+            startingImageUrl: string;
+            /**
+             * Format: uri
+             * @description Public HTTPS URL of the source video whose motion is cloned. http:// URLs are rejected.
+             */
+            sourceVideoUrl: string;
+            /**
+             * @description Generation model. Defaults to "kling": Kling motion control puppets the character image with the source video's motion and keeps the original sound. "seedance" is the alternate model (9:16 at 480p, video-edit).
+             * @default kling
+             */
+            model: components["schemas"]["CloneVideoModel"];
+            /** @description Optional override for the default identity-swap prompt (seedance only). */
+            prompt?: string;
+        };
+        /** @enum {string} */
+        CloneVideoStatus: "processing" | "completed" | "failed";
+        CloneVideoStatusResponse: {
+            /** @description Clone task id. */
+            id: string;
+            /** @description Current task status. */
+            status: components["schemas"]["CloneVideoStatus"];
+            /**
+             * Format: uri
+             * @description HTTPS URL of the finished clone. Present only when status is "completed".
+             */
+            videoUrl?: string;
+            /** @description Failure explanation. Present only when status is "failed". */
+            error?: string;
+        };
         ComplianceCheckResponse: {
             /**
              * Format: int32
@@ -1385,6 +1568,15 @@ export interface components {
             explanation: string;
             citation: components["schemas"]["ComplianceCitation"];
             evidence: components["schemas"]["ComplianceEvidence"];
+        };
+        CreateCharacterRequest: {
+            /** @description Text description of the character to generate. */
+            prompt: string;
+            /**
+             * Format: uri
+             * @description Optional public HTTPS URL of a reference image to guide identity. http:// URLs are rejected.
+             */
+            referenceImageUrl?: string;
         };
         /** @description Per-endpoint daily request limits, keyed by endpoint name (fixed window, resets 00:00 UTC). */
         DailyLimits: {
@@ -1539,6 +1731,15 @@ export interface components {
             maxDurationSeconds?: number;
             intent?: string;
             dryRun?: boolean;
+        };
+        GeneratedImageResponse: {
+            /**
+             * Format: uri
+             * @description HTTPS CDN URL of the generated image.
+             */
+            imageUrl: string;
+            /** @description Provider model id that produced the image. */
+            model: string;
         };
         HttpVideoSource: {
             /** @enum {string} */
@@ -2335,6 +2536,49 @@ export interface operations {
             };
         };
     };
+    createCharacter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCharacterRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneratedImageResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     checkSpec: {
         parameters: {
             query?: never;
@@ -2514,6 +2758,166 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DistributionJob"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    cloneCheck: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloneCheckResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    cloneStartingImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneStartingImageRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeneratedImageResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    cloneVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloneVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has been accepted for processing, but processing has not yet completed. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloneVideoAccepted"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description HTTP 429 Too Many Requests — a per-endpoint daily rate limit was exceeded. The limit window is fixed and resets at 00:00 UTC. Body is the standard ApiError; a Retry-After header carries the seconds until reset. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    getCloneVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CloneVideoStatusResponse"];
                 };
             };
             /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
