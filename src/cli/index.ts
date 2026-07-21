@@ -19,7 +19,6 @@ const main = defineCommand({
     admin: () => import("./commands/admin").then((m) => m.default),
     version: () => import("./commands/version").then((m) => m.default),
     update: () => import("./commands/update").then((m) => m.default),
-    clips: () => import("./commands/clips").then((m) => m.default),
     jobs: () => import("./commands/jobs").then((m) => m.default),
     clone: () => import("./commands/clone").then((m) => m.default),
 
