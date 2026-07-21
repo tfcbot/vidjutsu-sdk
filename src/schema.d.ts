@@ -206,13 +206,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List your persisted characters
+         * @description Returns all characters previously created by the caller, most recent first. Status/list reads are not billed.
+         */
+        get: operations["listCharacters"];
         put?: never;
         /**
-         * Create a reusable generated character image
-         * @description Generates a photoreal character identity image from a text prompt, optionally guided by one HTTPS reference image. Returns a CDN-hosted image URL to feed into the starting-image step. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
+         * Create a reusable, persisted character image
+         * @description Generates a photoreal character identity image from a text prompt, optionally guided by one HTTPS reference image, and persists it durably under an id. Returns the character id plus a CDN-hosted image URL; reuse the id later via cloneStartingImage's characterId or fetch it again with GET /v1/characters/{id}. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
          */
         post: operations["createCharacter"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/characters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fetch a persisted character by id
+         * @description Returns a single character owned by the caller. Unknown ids and other tenants' ids return 404. Status reads are not billed.
+         */
+        get: operations["getCharacter"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -354,7 +378,7 @@ export interface paths {
         put?: never;
         /**
          * Create a character-swapped starting frame
-         * @description Composes a clean starting frame for a clone by applying the prompt to the character image, optionally grounded in the source video's first frame. The returned image is guaranteed to be a clean cinematic frame with no text overlays, captions, subtitles, watermarks, or platform UI, regardless of what is present in the source video or requested prompt. All URLs must be public HTTPS. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
+         * @description Composes a clean starting frame for a clone by applying the prompt to the character image, optionally grounded in the source video's first frame. Supply exactly one of characterImageUrl (a public HTTPS image) or characterId (a previously created character's id, from createCharacter or GET /v1/characters) to identify the character; supplying both or neither is a validation error. The returned image is guaranteed to be a clean cinematic frame with no text overlays, captions, subtitles, watermarks, or platform UI, regardless of what is present in the source video or requested prompt. All other URLs must be public HTTPS. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
          */
         post: operations["cloneStartingImage"];
         delete?: never;
@@ -1355,6 +1379,22 @@ export interface components {
         };
         /** @enum {string} */
         BrollMode: "auto" | "supplied" | "none";
+        Character: {
+            /** @description Persisted character id (char_...). */
+            id: string;
+            /**
+             * Format: uri
+             * @description HTTPS CDN URL of the character image.
+             */
+            imageUrl: string;
+            /** @description Provider model id that produced the image. */
+            model: string;
+            /**
+             * Format: int64
+             * @description Creation timestamp, epoch milliseconds.
+             */
+            createdAt: number;
+        };
         CheckRequest: {
             /** @description VidLang spec JSON to validate */
             spec: {
@@ -1435,9 +1475,11 @@ export interface components {
         CloneStartingImageRequest: {
             /**
              * Format: uri
-             * @description Public HTTPS URL of the character identity image. http:// URLs are rejected.
+             * @description Public HTTPS URL of the character identity image. http:// URLs are rejected. Exactly one of characterImageUrl or characterId must be supplied.
              */
-            characterImageUrl: string;
+            characterImageUrl?: string;
+            /** @description Id of a previously created character (from createCharacter or GET /v1/characters) whose stored image should be used. Exactly one of characterImageUrl or characterId must be supplied. */
+            characterId?: string;
             /** @description Instructions for composing the starting frame (pose, framing, scene). */
             prompt: string;
             /**
@@ -1577,6 +1619,17 @@ export interface components {
              * @description Optional public HTTPS URL of a reference image to guide identity. http:// URLs are rejected.
              */
             referenceImageUrl?: string;
+        };
+        CreateCharacterResponse: {
+            /** @description Persisted character id (char_...). Reuse it later via cloneStartingImage's characterId or GET /v1/characters/{id}. */
+            id: string;
+            /**
+             * Format: uri
+             * @description HTTPS CDN URL of the generated character image.
+             */
+            imageUrl: string;
+            /** @description Provider model id that produced the image. */
+            model: string;
         };
         /** @description Per-endpoint daily request limits, keyed by endpoint name (fixed window, resets 00:00 UTC). */
         DailyLimits: {
@@ -1761,6 +1814,10 @@ export interface components {
             /** @enum {string} */
             kind: "video" | "clip" | "post" | "image" | "character" | "clone_check";
             id: string;
+        };
+        ListCharactersResponse: {
+            /** @description Characters owned by the caller, most recent first. */
+            characters: components["schemas"]["Character"][];
         };
         MediaJob: {
             jobId: string;
@@ -2536,6 +2593,35 @@ export interface operations {
             };
         };
     };
+    listCharacters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListCharactersResponse"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     createCharacter: {
         parameters: {
             query?: never;
@@ -2555,7 +2641,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GeneratedImageResponse"];
+                    "application/json": components["schemas"]["CreateCharacterResponse"];
                 };
             };
             /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
@@ -2571,6 +2657,37 @@ export interface operations {
             429: {
                 headers: {
                     "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    getCharacter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Character"];
+                };
+            };
+            /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
+            403: {
+                headers: {
                     [name: string]: unknown;
                 };
                 content: {

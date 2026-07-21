@@ -46,8 +46,12 @@ export interface VidJutsuMethods {
   confirmVerification(body: ReqBody<"/v1/auth/verify/confirm", "post">): ReturnType<Client["POST"]>;
   /** Request email verification code Public endpoint. */
   requestVerification(body: ReqBody<"/v1/auth/verify/request", "post">): ReturnType<Client["POST"]>;
-  /** Create a reusable generated character image */
+  /** Create a reusable, persisted character image */
   createCharacter(body: ReqBody<"/v1/characters", "post">): ReturnType<Client["POST"]>;
+  /** List your persisted characters */
+  listCharacters(): ReturnType<Client["GET"]>;
+  /** Fetch a persisted character by id */
+  getCharacter(id: string): ReturnType<Client["GET"]>;
   /** Check spec Auth required. 5 credits. */
   checkSpec(body: ReqBody<"/v1/check", "post">): ReturnType<Client["POST"]>;
   /** Get check rules Auth required. */
@@ -210,6 +214,12 @@ export function bindMethods(client: Client): VidJutsuMethods {
     },
     createCharacter(body) {
       return client.POST("/v1/characters" as any, { body } as any);
+    },
+    listCharacters() {
+      return client.GET("/v1/characters" as any, {} as any);
+    },
+    getCharacter(id) {
+      return client.GET("/v1/characters/{id}" as any, { params: {path: { id }} } as any);
     },
     checkSpec(body) {
       return client.POST("/v1/check" as any, { body } as any);

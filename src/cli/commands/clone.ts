@@ -12,6 +12,16 @@ function validateModel(model: string | undefined): CloneModel | undefined {
   return model as CloneModel;
 }
 
+/** A stored character id looks like char_..., as opposed to an https:// image URL. */
+function isCharacterId(value: string): boolean {
+  return value.startsWith("char_");
+}
+
+/** Build the {characterImageUrl} | {characterId} half of a starting-image request body. */
+function characterRef(value: string): { characterImageUrl: string } | { characterId: string } {
+  return isCharacterId(value) ? { characterId: value } : { characterImageUrl: value };
+}
+
 interface CloneVideoStatus {
   id: string;
   status: "processing" | "completed" | "failed";
@@ -75,35 +85,80 @@ export default defineCommand({
     character: defineCommand({
       meta: {
         name: "character",
-        description: "Create a reusable generated character image. Metered per call.",
+        description:
+          "Create a reusable, persisted character. Create it once, then reuse the printed id for every " +
+          "clone (see `vidjutsu clone starting-image --character <id>` and `clone run --character <id>`). " +
+          "Metered per call.",
+      },
+      subCommands: {
+        list: defineCommand({
+          meta: {
+            name: "list",
+            description: "List your persisted characters. Reads are not billed.",
+          },
+          async run() {
+            const result = (await apiRequest("GET", "/v1/characters")) as {
+              characters?: Array<{ id: string; model: string; createdAt: string }>;
+            } | Array<{ id: string; model: string; createdAt: string }>;
+
+            const characters = Array.isArray(result) ? result : (result.characters ?? []);
+
+            if (characters.length === 0) {
+              console.log("No characters yet. Create one with: vidjutsu clone character --prompt ...");
+              return;
+            }
+
+            for (const c of characters) {
+              console.log(`${c.id}  ${c.model}  ${c.createdAt}`);
+            }
+          },
+        }),
       },
       args: {
-        prompt: { type: "string", description: "Text description of the character to generate", required: true },
+        prompt: { type: "string", description: "Text description of the character to generate" },
         reference: { type: "string", description: "Optional public HTTPS reference image URL to guide identity" },
       },
-      async run({ args }) {
+      async run({ args, rawArgs }) {
+        // citty always invokes a command's own `run` even after dispatching a subcommand
+        // (e.g. `character list`), so bail out here once `list` has already handled it.
+        if (rawArgs[0] === "list") return;
+
+        if (!args.prompt) {
+          throw new Error("--prompt is required to create a character (or run `vidjutsu clone character list`).");
+        }
+
         const result = (await apiRequest("POST", "/v1/characters", {
           prompt: args.prompt,
           referenceImageUrl: args.reference,
-        })) as { imageUrl: string; model: string };
+        })) as { id: string; imageUrl: string; model: string };
 
-        console.log(result.imageUrl);
+        console.log(`Character created: ${result.id}`);
+        console.log(`Image: ${result.imageUrl}`);
+        console.log(`Model: ${result.model}`);
+        console.log("");
+        console.log(`Reuse this character with: --character ${result.id}`);
       },
     }),
 
     "starting-image": defineCommand({
       meta: {
         name: "starting-image",
-        description: "Create a character-swapped starting frame, with no overlays. Metered per call.",
+        description:
+          "Create a character-swapped starting frame, with no overlays. --character accepts either a stored " +
+          "character id (char_...) or a public HTTPS character image URL. Metered per call.",
       },
       args: {
-        character: { type: "string", description: "Public HTTPS URL of the character identity image", required: true },
+        character: {
+          type: "string",
+          description: "Stored character id (char_...) from `clone character`, or a public HTTPS character image URL",
+          required: true,
+        },
         prompt: { type: "string", description: "Instructions for composing the starting frame", required: true },
         source: { type: "string", description: "Optional public HTTPS source video URL to ground the composition" },
       },
       async run({ args }) {
         const result = (await apiRequest("POST", "/v1/clones/starting-image", {
-          characterImageUrl: args.character,
+          ...characterRef(args.character),
           prompt: args.prompt,
           sourceVideoUrl: args.source,
         })) as { imageUrl: string; model: string };
@@ -162,21 +217,37 @@ export default defineCommand({
       meta: {
         name: "run",
         description:
-          "Run the full clone chain: download the TikTok video, check it, generate a character, generate a " +
-          "starting image, generate the clone video, and wait for it to finish. About 5 minutes end to end. " +
-          "Kling motion control is the default model; output is 480p 9:16, source clips are capped at 15 seconds. " +
-          "Each step is metered per call. Stops before spending on generation when the check verdict is weak, " +
-          "unless --force is given.",
+          "Run the full clone chain: download the TikTok video, check it, generate a starting image from a " +
+          "reusable stored character, generate the clone video, and wait for it to finish. About 5 minutes end " +
+          "to end. Characters are reusable: create one once with `vidjutsu clone character --prompt ...`, then " +
+          "pass its id here with --character on every run — this command never generates a new random character. " +
+          "--character is required. Kling motion control is the default model; output is 480p 9:16, source clips " +
+          "are capped at 15 seconds. Each step is metered per call. Stops before spending on generation when the " +
+          "check verdict is weak, unless --force is given.",
       },
       args: {
         tiktokUrl: { type: "positional", description: "TikTok video URL to clone", required: true },
-        "character-prompt": { type: "string", description: "Prompt for the generated character (default: a generic presenter)" },
+        character: {
+          type: "string",
+          description:
+            "Required. Stored character id (char_...) from `vidjutsu clone character --prompt ...`. " +
+            "Characters are reusable across runs — create one once, then pass its id here every time.",
+        },
         "starting-prompt": { type: "string", description: "Prompt for the starting frame composition" },
         model: { type: "string", description: "kling (default) or seedance" },
         force: { type: "boolean", description: "Proceed even if the clone check verdict is weak" },
       },
       async run({ args }) {
         const model = validateModel(args.model);
+
+        if (!args.character) {
+          console.log(
+            "Missing --character. Create a reusable character first with: " +
+              'vidjutsu clone character --prompt "A neutral, camera-ready presenter"',
+          );
+          console.log("Then pass its id here: vidjutsu clone run <url> --character char_...");
+          process.exit(1);
+        }
 
         console.log(`Downloading ${args.tiktokUrl}...`);
         const download = (await apiRequest("POST", "/v1/videos/download/tiktok", {
@@ -198,14 +269,9 @@ export default defineCommand({
           process.exit(1);
         }
 
-        console.log("Generating character...");
-        const character = (await apiRequest("POST", "/v1/characters", {
-          prompt: args["character-prompt"] ?? "A neutral, camera-ready presenter",
-        })) as { imageUrl: string };
-
         console.log("Generating starting image...");
         const startingImage = (await apiRequest("POST", "/v1/clones/starting-image", {
-          characterImageUrl: character.imageUrl,
+          ...characterRef(args.character),
           prompt: args["starting-prompt"] ?? "Match the framing and pose of the source video's opening frame",
           sourceVideoUrl: download.url,
         })) as { imageUrl: string };
