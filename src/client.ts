@@ -2,8 +2,7 @@ import createFetchClient from "openapi-fetch";
 import type { paths } from "./schema.js";
 import { bindMethods, type VidJutsuMethods } from "./methods.js";
 import { bindDistribution, type DistributionNamespaces } from "./distribution.js";
-import { bindCloning, type CloningNamespaces } from "./cloning.js";
-import { bindAgentTasks, type AgentTaskNamespaces } from "./agent-tasks.js";
+import { bindJobs, type JobsNamespaces } from "./jobs.js";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { homedir } from "os";
@@ -22,8 +21,7 @@ type FetchClient = ReturnType<typeof createFetchClient<paths>>;
 export type VidJutsuClient =
   & VidJutsuMethods
   & DistributionNamespaces
-  & CloningNamespaces
-  & AgentTaskNamespaces
+  & JobsNamespaces
   & { api: FetchClient };
 
 interface ConfigFile {
@@ -85,8 +83,7 @@ export function createClient(config: VidJutsuConfig = {}): VidJutsuClient {
 
   const methods = bindMethods(fetchClient);
   const distribution = bindDistribution(fetchClient);
-  const cloning = bindCloning(fetchClient);
-  const agentTasks = bindAgentTasks(fetchClient);
+  const jobs = bindJobs(fetchClient);
 
-  return { ...methods, ...distribution, ...cloning, ...agentTasks, api: fetchClient };
+  return { ...methods, ...distribution, ...jobs, api: fetchClient };
 }
