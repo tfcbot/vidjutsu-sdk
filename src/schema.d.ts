@@ -318,7 +318,7 @@ export interface paths {
         put?: never;
         /**
          * Create a character-swapped starting frame
-         * @description Composes a clean starting frame for a clone by applying the prompt to the character image, optionally grounded in the source video's first frame. Supply exactly one of characterImageUrl (a public HTTPS image) or characterId (a previously created character's id, from createCharacter or GET /v1/characters) to identify the character; supplying both or neither is a validation error. The returned image is guaranteed to be a clean cinematic frame with no text overlays, captions, subtitles, watermarks, or platform UI, regardless of what is present in the source video or requested prompt. All other URLs must be public HTTPS. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
+         * @description Edits the supplied firstFrame image with google/gemini-3.1-flash-image through the caller's tenant-scoped Vercel AI Gateway key. The first frame supplies pose, framing, lighting, background, and composition; the required characterId supplies the replacement identity. The returned image is generated with a server-enforced instruction to remove text overlays, captions, subtitles, watermarks, and platform UI. firstFrame must be public HTTPS. Synchronous; typically completes within a minute. Shares the daily clone admission limit.
          */
         post: operations["cloneStartingImage"];
         delete?: never;
@@ -337,8 +337,8 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Clone source motion with Kling motion control or Seedance
-         * @description Submits an asynchronous motion-clone generation. The default kling model uses Kling motion control to puppet the starting-image identity with the source video's motion, keeping the original sound; model="seedance" is the alternate model, rendering 9:16 at 480p via video-edit. All URLs must be public HTTPS. Source clips are capped at 15 seconds; a longer sourceVideoUrl is rejected with a 422 and an error of "video_too_long". Returns 202 with a task id to poll via GET /v1/clones/video/{id}.
+         * Clone source motion with Kling 3.0 Motion Control
+         * @description Submits an asynchronous Kling 3.0 Motion Control generation. The starting-image identity is puppeted with the source video's motion while keeping the original sound. All URLs must be public HTTPS. Source clips are capped at 15 seconds; a longer sourceVideoUrl is rejected with a 422 and an error of "video_too_long". Returns 202 with a task id to read via GET /v1/clones/video/{id}.
          */
         post: operations["cloneVideo"];
         delete?: never;
@@ -1293,18 +1293,13 @@ export interface components {
         CloneStartingImageRequest: {
             /**
              * Format: uri
-             * @description Public HTTPS URL of the character identity image. http:// URLs are rejected. Exactly one of characterImageUrl or characterId must be supplied.
+             * @description Public HTTPS URL of the source video's extracted first-frame image. This image supplies the pose, framing, lighting, background, and composition to preserve. http:// URLs are rejected.
              */
-            characterImageUrl?: string;
-            /** @description Id of a previously created character (from createCharacter or GET /v1/characters) whose stored image should be used. Exactly one of characterImageUrl or characterId must be supplied. */
-            characterId?: string;
+            firstFrame: string;
+            /** @description Id of a previously created character (from createCharacter or GET /v1/characters) whose stored image supplies the replacement identity. */
+            characterId: string;
             /** @description Instructions for composing the starting frame (pose, framing, scene). */
             prompt: string;
-            /**
-             * Format: uri
-             * @description Optional public HTTPS URL of the source video whose opening frame should ground the composition.
-             */
-            sourceVideoUrl?: string;
         };
         CloneVideoAccepted: {
             /** @description Clone task id. Poll GET /v1/clones/video/{id} with it. */
@@ -1316,7 +1311,7 @@ export interface components {
             status: "processing";
         };
         /** @enum {string} */
-        CloneVideoModel: "seedance" | "kling";
+        CloneVideoModel: "kling";
         CloneVideoRequest: {
             /**
              * Format: uri
@@ -1329,11 +1324,11 @@ export interface components {
              */
             sourceVideoUrl: string;
             /**
-             * @description Generation model. Defaults to "kling": Kling motion control puppets the character image with the source video's motion and keeps the original sound. "seedance" is the alternate model (9:16 at 480p, video-edit).
+             * @description Generation model. Only "kling" is supported: Kling 3.0 Motion Control puppets the character image with the source video's motion and keeps the original sound.
              * @default kling
              */
             model: components["schemas"]["CloneVideoModel"];
-            /** @description Optional override for the default identity-swap prompt (seedance only). */
+            /** @description Optional override for the default motion-control prompt. */
             prompt?: string;
         };
         /** @enum {string} */

@@ -62,7 +62,7 @@ export interface VidJutsuMethods {
   cloneCheck(body: ReqBody<"/v1/clones/check", "post">): ReturnType<Client["POST"]>;
   /** Create a character-swapped starting frame */
   cloneStartingImage(body: ReqBody<"/v1/clones/starting-image", "post">): ReturnType<Client["POST"]>;
-  /** Clone source motion with Kling motion control or Seedance */
+  /** Clone source motion with Kling 3.0 Motion Control */
   cloneVideo(body: ReqBody<"/v1/clones/video", "post">): ReturnType<Client["POST"]>;
   /** Poll a clone video task */
   getCloneVideo(id: string): ReturnType<Client["GET"]>;
