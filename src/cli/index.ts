@@ -6,7 +6,7 @@ const main = defineCommand({
   meta: {
     name: "vidjutsu",
     version: VERSION,
-    description: "Video intelligence API — watch, extract, transcribe, check.",
+    description: "Clone short-form videos and process media with the VidJutsu API.",
   },
   subCommands: {
     // --- Hand-written (custom logic) ---
@@ -15,8 +15,6 @@ const main = defineCommand({
     upload: () => import("./commands/upload").then((m) => m.default),
     subscribe: () => import("./commands/subscribe").then((m) => m.default),
     status: () => import("./commands/status").then((m) => m.default),
-    balance: () => import("./commands/balance").then((m) => m.default),
-    admin: () => import("./commands/admin").then((m) => m.default),
     version: () => import("./commands/version").then((m) => m.default),
     update: () => import("./commands/update").then((m) => m.default),
     clone: () => import("./commands/clone").then((m) => m.default),

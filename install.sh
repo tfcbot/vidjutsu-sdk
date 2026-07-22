@@ -43,45 +43,6 @@ detect_platform() {
   info "Detected platform: ${BOLD}${PLATFORM}${RESET}"
 }
 
-# --- Prerequisites ---
-
-ensure_node() {
-  if command -v node >/dev/null 2>&1; then
-    success "Node.js $(node --version) found"
-    return
-  fi
-
-  error "Node.js is required. Install it from https://nodejs.org"
-}
-
-ensure_bun() {
-  if command -v bun >/dev/null 2>&1; then
-    success "Bun $(bun --version) found"
-    return
-  fi
-
-  info "Installing Bun..."
-  curl -fsSL https://bun.sh/install | bash
-  export BUN_INSTALL="$HOME/.bun"
-  export PATH="$BUN_INSTALL/bin:$PATH"
-  success "Bun installed: $(bun --version)"
-}
-
-ensure_typescript() {
-  if command -v tsc >/dev/null 2>&1; then
-    success "TypeScript $(tsc --version) found"
-    return
-  fi
-
-  info "Installing TypeScript globally..."
-  if command -v bun >/dev/null 2>&1; then
-    bun add -g typescript
-  elif command -v npm >/dev/null 2>&1; then
-    npm install -g typescript
-  fi
-  success "TypeScript installed"
-}
-
 # --- Version Detection ---
 
 get_version() {
@@ -180,9 +141,6 @@ main() {
   printf "\n${BOLD}  VidJutsu CLI Installer${RESET}\n\n"
 
   detect_platform
-  ensure_node
-  ensure_bun
-  ensure_typescript
   get_version
   install_binary
   verify
@@ -190,7 +148,7 @@ main() {
   printf "\n${GREEN}${BOLD}  ✓ VidJutsu CLI v${VERSION} installed successfully${RESET}\n"
   printf "\n  Get started:\n"
   printf "    ${CYAN}vidjutsu auth${RESET}       — authenticate your account\n"
-  printf "    ${CYAN}vidjutsu generate${RESET}   — generate AI video\n"
+  printf "    ${CYAN}vidjutsu clone --help${RESET} — clone a staged short video\n"
   printf "    ${CYAN}vidjutsu --help${RESET}     — see all commands\n\n"
 }
 

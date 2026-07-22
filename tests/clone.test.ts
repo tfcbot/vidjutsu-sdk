@@ -119,16 +119,37 @@ describe("clone run", () => {
       if (request.url.endsWith("/v1/characters")) {
         throw new Error("clone run must not create a new character when --character is given");
       }
+      if (request.url.endsWith("/v1/extract")) {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        expect(body).toEqual({
+          mediaUrl: "https://cdn.vidjutsu.ai/staged/source.mp4",
+          frames: [0],
+          audio: false,
+          metadata: false,
+        });
+        return jsonResponse({
+          frames: [{ index: 0, url: "https://cdn.vidjutsu.ai/staged/first-frame.png" }],
+        });
+      }
       if (request.url.endsWith("/v1/clones/starting-image")) {
         const body = init?.body ? JSON.parse(init.body as string) : {};
-        expect(body.characterId).toBe("char_abc123");
-        expect(body.characterImageUrl).toBeUndefined();
+        expect(body).toEqual({
+          firstFrame: "https://cdn.vidjutsu.ai/staged/first-frame.png",
+          characterId: "char_abc123",
+          prompt: "Match the framing and pose of the source video's opening frame",
+        });
         return jsonResponse({
           imageUrl: "https://cdn.vidjutsu.ai/staged/starting-frame.png",
           model: "nano-banana",
         });
       }
       if (request.url.endsWith("/v1/clones/video")) {
+        const body = init?.body ? JSON.parse(init.body as string) : {};
+        expect(body).toEqual({
+          startingImageUrl: "https://cdn.vidjutsu.ai/staged/starting-frame.png",
+          sourceVideoUrl: "https://cdn.vidjutsu.ai/staged/source.mp4",
+          model: "kling",
+        });
         return jsonResponse({ id: "clone_task_1", status: "processing" }, 202);
       }
       if (request.url.includes("/v1/clones/video/")) {
@@ -148,6 +169,7 @@ describe("clone run", () => {
     expect(calls).toEqual([
       "https://vidjutsu.test/v1/videos/download/tiktok",
       "https://vidjutsu.test/v1/clones/check",
+      "https://vidjutsu.test/v1/extract",
       "https://vidjutsu.test/v1/clones/starting-image",
       "https://vidjutsu.test/v1/clones/video",
       "https://vidjutsu.test/v1/clones/video/clone_task_1",
@@ -214,6 +236,45 @@ describe("clone run", () => {
       "https://vidjutsu.test/v1/videos/download/tiktok",
       "https://vidjutsu.test/v1/clones/check",
     ]);
+  });
+});
+
+describe("clone request contracts", () => {
+  test("starting-image sends only firstFrame, characterId, and prompt", async () => {
+    globalThis.fetch = (async (input, init) => {
+      const request = input instanceof Request ? input.clone() : new Request(input, init);
+      expect(request.url).toBe("https://vidjutsu.test/v1/clones/starting-image");
+      expect(init?.body ? JSON.parse(init.body as string) : {}).toEqual({
+        firstFrame: "https://cdn.vidjutsu.ai/frame.png",
+        characterId: "char_genz",
+        prompt: "Preserve pose and framing",
+      });
+      return jsonResponse({ imageUrl: "https://cdn.vidjutsu.ai/starting.png", model: "gemini" });
+    }) as typeof fetch;
+
+    await runCommand(cloneCommand, {
+      rawArgs: [
+        "starting-image",
+        "--first-frame", "https://cdn.vidjutsu.ai/frame.png",
+        "--character", "char_genz",
+        "--prompt", "Preserve pose and framing",
+      ],
+    });
+  });
+
+  test("rejects Seedance before making a provider request", async () => {
+    globalThis.fetch = (async () => {
+      throw new Error("no request expected");
+    }) as typeof fetch;
+
+    await expect(runCommand(cloneCommand, {
+      rawArgs: [
+        "video",
+        "--starting-image", "https://cdn.vidjutsu.ai/starting.png",
+        "--source", "https://cdn.vidjutsu.ai/source.mp4",
+        "--model", "seedance",
+      ],
+    })).rejects.toThrow("--model must be one of: kling");
   });
 });
 

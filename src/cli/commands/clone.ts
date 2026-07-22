@@ -1,7 +1,7 @@
 import { defineCommand } from "citty";
 import { apiRequest } from "../client";
 
-const VALID_MODELS = ["kling", "seedance"] as const;
+const VALID_MODELS = ["kling"] as const;
 type CloneModel = (typeof VALID_MODELS)[number];
 
 function validateModel(model: string | undefined): CloneModel | undefined {
@@ -12,14 +12,15 @@ function validateModel(model: string | undefined): CloneModel | undefined {
   return model as CloneModel;
 }
 
-/** A stored character id looks like char_..., as opposed to an https:// image URL. */
 function isCharacterId(value: string): boolean {
   return value.startsWith("char_");
 }
 
-/** Build the {characterImageUrl} | {characterId} half of a starting-image request body. */
-function characterRef(value: string): { characterImageUrl: string } | { characterId: string } {
-  return isCharacterId(value) ? { characterId: value } : { characterImageUrl: value };
+function requireCharacterId(value: string): string {
+  if (!isCharacterId(value)) {
+    throw new Error("--character must be a stored character id beginning with char_");
+  }
+  return value;
 }
 
 interface CloneVideoStatus {
@@ -48,15 +49,15 @@ export default defineCommand({
     name: "clone",
     description:
       "Clone a source video's motion onto a new character. About 5 minutes end to end for the full chain. " +
-      "Kling motion control is the default model; output is 480p 9:16. Source clips are capped at 15 seconds. " +
-      "Each step below is metered per call.",
+      "Kling 3.0 Motion Control is the supported model. Source clips are capped at 15 seconds. " +
+      "Generation steps share the subscription's daily clone limit.",
   },
   subCommands: {
     check: defineCommand({
       meta: {
         name: "check",
         description:
-          "Evaluate whether a source video can be cloned reliably. Metered per call. " +
+          "Evaluate whether a source video can be cloned reliably. Uses the daily clone limit. " +
           "Exits nonzero when the verdict is weak.",
       },
       args: {
@@ -88,7 +89,7 @@ export default defineCommand({
         description:
           "Create a reusable, persisted character. Create it once, then reuse the printed id for every " +
           "clone (see `vidjutsu clone starting-image --character <id>` and `clone run --character <id>`). " +
-          "Metered per call.",
+          "Uses the daily clone limit.",
       },
       subCommands: {
         list: defineCommand({
@@ -144,23 +145,26 @@ export default defineCommand({
       meta: {
         name: "starting-image",
         description:
-          "Create a character-swapped starting frame, with no overlays. --character accepts either a stored " +
-          "character id (char_...) or a public HTTPS character image URL. Metered per call.",
+          "Create a character-swapped starting frame from an extracted first frame and a stored character id. Uses the daily clone limit.",
       },
       args: {
         character: {
           type: "string",
-          description: "Stored character id (char_...) from `clone character`, or a public HTTPS character image URL",
+          description: "Stored character id (char_...) from `clone character`",
+          required: true,
+        },
+        "first-frame": {
+          type: "string",
+          description: "Public HTTPS URL of the source video's extracted first-frame image",
           required: true,
         },
         prompt: { type: "string", description: "Instructions for composing the starting frame", required: true },
-        source: { type: "string", description: "Optional public HTTPS source video URL to ground the composition" },
       },
       async run({ args }) {
         const result = (await apiRequest("POST", "/v1/clones/starting-image", {
-          ...characterRef(args.character),
+          firstFrame: args["first-frame"],
+          characterId: requireCharacterId(args.character),
           prompt: args.prompt,
-          sourceVideoUrl: args.source,
         })) as { imageUrl: string; model: string };
 
         console.log(result.imageUrl);
@@ -171,14 +175,14 @@ export default defineCommand({
       meta: {
         name: "video",
         description:
-          "Clone source motion onto a starting image. Kling motion control is the default; seedance is the " +
-          "alternate model, 9:16 at 480p. Metered per call. Returns a task id (HTTP 202); use --wait to poll to completion.",
+          "Clone source motion onto a starting image with Kling 3.0 Motion Control. Uses the daily clone limit. " +
+          "Returns a task id (HTTP 202); use --wait to poll to completion.",
       },
       args: {
         "starting-image": { type: "string", description: "Public HTTPS URL of the starting frame", required: true },
         source: { type: "string", description: "Public HTTPS URL of the source video whose motion is cloned", required: true },
-        model: { type: "string", description: "kling (default) or seedance" },
-        prompt: { type: "string", description: "Optional override for the default identity-swap prompt (seedance only)" },
+        model: { type: "string", description: "kling (the only supported model)" },
+        prompt: { type: "string", description: "Optional override for the default motion-control prompt" },
         wait: { type: "boolean", description: "Poll GET status until completed or failed, then print videoUrl" },
       },
       async run({ args }) {
@@ -221,9 +225,10 @@ export default defineCommand({
           "reusable stored character, generate the clone video, and wait for it to finish. About 5 minutes end " +
           "to end. Characters are reusable: create one once with `vidjutsu clone character --prompt ...`, then " +
           "pass its id here with --character on every run — this command never generates a new random character. " +
-          "--character is required. Kling motion control is the default model; output is 480p 9:16, source clips " +
-          "are capped at 15 seconds. Each step is metered per call. Stops before spending on generation when the " +
-          "check verdict is weak, unless --force is given.",
+          "--character is required. Kling 3.0 Motion Control is the only model; source clips " +
+          "are capped at 15 seconds. Generation steps share the daily clone limit. Stops before generation when the " +
+          "check verdict is weak, unless --force is given. The command extracts frame 0 and passes it directly " +
+          "to the character edit step.",
       },
       args: {
         tiktokUrl: { type: "positional", description: "TikTok video URL to clone", required: true },
@@ -234,11 +239,11 @@ export default defineCommand({
             "Characters are reusable across runs — create one once, then pass its id here every time.",
         },
         "starting-prompt": { type: "string", description: "Prompt for the starting frame composition" },
-        model: { type: "string", description: "kling (default) or seedance" },
+        model: { type: "string", description: "kling (the only supported model)" },
         force: { type: "boolean", description: "Proceed even if the clone check verdict is weak" },
       },
       async run({ args }) {
-        const model = validateModel(args.model);
+        const model = validateModel(args.model) ?? "kling";
 
         if (!args.character) {
           console.log(
@@ -248,6 +253,7 @@ export default defineCommand({
           console.log("Then pass its id here: vidjutsu clone run <url> --character char_...");
           process.exit(1);
         }
+        const characterId = requireCharacterId(args.character);
 
         console.log(`Downloading ${args.tiktokUrl}...`);
         const download = (await apiRequest("POST", "/v1/videos/download/tiktok", {
@@ -269,11 +275,21 @@ export default defineCommand({
           process.exit(1);
         }
 
+        console.log("Extracting first frame...");
+        const extracted = (await apiRequest("POST", "/v1/extract", {
+          mediaUrl: download.url,
+          frames: [0],
+          audio: false,
+          metadata: false,
+        })) as { frames?: Array<{ index: number; url: string }> };
+        const firstFrame = extracted.frames?.find((frame) => frame.index === 0)?.url ?? extracted.frames?.[0]?.url;
+        if (!firstFrame) throw new Error("The source video did not return an extracted first frame");
+
         console.log("Generating starting image...");
         const startingImage = (await apiRequest("POST", "/v1/clones/starting-image", {
-          ...characterRef(args.character),
+          firstFrame,
+          characterId,
           prompt: args["starting-prompt"] ?? "Match the framing and pose of the source video's opening frame",
-          sourceVideoUrl: download.url,
         })) as { imageUrl: string };
 
         console.log("Generating clone video...");

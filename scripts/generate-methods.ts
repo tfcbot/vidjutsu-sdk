@@ -19,64 +19,43 @@ const scriptDir = fileURLToPath(new URL(".", import.meta.url));
 const outPath = resolve(scriptDir, "../src/methods.ts");
 
 // ---------------------------------------------------------------------------
-// Route metadata (auth level + credits per operation)
+// Route metadata (auth and subscription requirements per operation)
 // Inlined to avoid depending on the main vidjutsu repo at codegen time.
 // ---------------------------------------------------------------------------
 
-const ROUTE_META: Record<string, { auth: string; credits: number; special?: string }> = {
-  createCheckout:      { auth: "public", credits: 0 },
-  getCheckoutStatus:   { auth: "public", credits: 0 },
-  createSubscription:  { auth: "public", credits: 0 },
-  getInfo:             { auth: "public", credits: 0 },
-  getPricing:          { auth: "public", credits: 0 },
-  recoverApiKey:       { auth: "public", credits: 0 },
-  requestVerification: { auth: "public", credits: 0 },
-  confirmVerification: { auth: "public", credits: 0 },
-  createAccount:       { auth: "authenticated", credits: 0 },
-  updateAccount:       { auth: "authenticated", credits: 0 },
-  listOrGetAccounts:   { auth: "authenticated", credits: 0 },
-  deleteAccount:       { auth: "authenticated", credits: 0 },
-  createAsset:         { auth: "authenticated", credits: 0 },
-  updateAsset:         { auth: "authenticated", credits: 0 },
-  listOrGetAssets:     { auth: "authenticated", credits: 0 },
-  deleteAsset:         { auth: "authenticated", credits: 0 },
-  createPost:          { auth: "authenticated", credits: 0 },
-  updatePost:          { auth: "authenticated", credits: 0 },
-  listOrGetPosts:      { auth: "authenticated", credits: 0 },
-  deletePost:          { auth: "authenticated", credits: 0 },
-  createReference:     { auth: "authenticated", credits: 0 },
-  updateReference:     { auth: "authenticated", credits: 0 },
-  listOrGetReferences: { auth: "authenticated", credits: 0 },
-  deleteReference:     { auth: "authenticated", credits: 0 },
-  getBalance:          { auth: "authenticated", credits: 0 },
-  getCheckRules:       { auth: "authenticated", credits: 0 },
-  updateCheckRules:    { auth: "authenticated", credits: 0 },
-  rotateApiKey:        { auth: "authenticated", credits: 0 },
-  uploadFile:          { auth: "authenticated", credits: 0, special: "binary" },
-  uploadFromUrl:       { auth: "authenticated", credits: 0 },
-  addVideo:            { auth: "authenticated", credits: 0 },
-  getDistributionJob:  { auth: "authenticated", credits: 0 },
-  getJob:               { auth: "authenticated", credits: 0 },
-  downloadTikTokVideo:  { auth: "paid", credits: 1 },
-  downloadInstagramVideo: { auth: "paid", credits: 1 },
-  watchMedia:          { auth: "paid", credits: 10 },
-  extractMedia:        { auth: "paid", credits: 5 },
-  transcribeMedia:     { auth: "paid", credits: 10 },
-  checkSpec:           { auth: "paid", credits: 5 },
-  createOverlay:       { auth: "paid", credits: 5 },
-  // Scrape primitives — base cost 1 credit + 1 per staged media file (dynamic).
-  scrapeTikTokProfile:           { auth: "paid", credits: 1 },
-  scrapeTikTokProfileVideos:     { auth: "paid", credits: 1 },
-  scrapeTikTokVideo:             { auth: "paid", credits: 1 },
-  scrapeTikTokVideoTranscript:   { auth: "paid", credits: 1 },
-  scrapeTikTokVideoComments:     { auth: "paid", credits: 1 },
-  scrapeTikTokSearchUsers:       { auth: "paid", credits: 1 },
-  scrapeTikTokTrending:          { auth: "paid", credits: 1 },
-  scrapeInstagramProfile:        { auth: "paid", credits: 1 },
-  scrapeInstagramUserPosts:      { auth: "paid", credits: 1 },
-  scrapeInstagramPost:           { auth: "paid", credits: 1 },
-  scrapeInstagramPostComments:   { auth: "paid", credits: 1 },
-  scrapeInstagramUserReels:      { auth: "paid", credits: 1 },
+const ROUTE_META: Record<string, { auth: "public" | "authenticated" | "subscription"; special?: "binary" }> = {
+  createSubscription: { auth: "public" }, getInfo: { auth: "public" }, getPricing: { auth: "public" },
+  recoverApiKey: { auth: "public" }, requestVerification: { auth: "public" }, confirmVerification: { auth: "public" },
+  getCheckoutStatus: { auth: "public" }, signupAgent: { auth: "public" }, agentClaim: { auth: "public" },
+  agentClaimComplete: { auth: "public" }, agentRevoke: { auth: "public" },
+  createAccount: { auth: "authenticated" }, updateAccount: { auth: "authenticated" },
+  listOrGetAccounts: { auth: "authenticated" }, deleteAccount: { auth: "authenticated" },
+  createAsset: { auth: "authenticated" }, updateAsset: { auth: "authenticated" },
+  listOrGetAssets: { auth: "authenticated" }, deleteAsset: { auth: "authenticated" },
+  createEditorProject: { auth: "authenticated" }, updateEditorProject: { auth: "authenticated" },
+  listOrGetEditorProjects: { auth: "authenticated" }, deleteEditorProject: { auth: "authenticated" },
+  createPost: { auth: "authenticated" }, updatePost: { auth: "authenticated" },
+  listOrGetPosts: { auth: "authenticated" }, deletePost: { auth: "authenticated" },
+  createReference: { auth: "authenticated" }, updateReference: { auth: "authenticated" },
+  listOrGetReferences: { auth: "authenticated" }, deleteReference: { auth: "authenticated" },
+  getUsage: { auth: "authenticated" }, getCheckRules: { auth: "authenticated" },
+  updateCheckRules: { auth: "authenticated" }, rotateApiKey: { auth: "authenticated" },
+  uploadFile: { auth: "authenticated", special: "binary" }, uploadFromUrl: { auth: "authenticated" },
+  listCharacters: { auth: "authenticated" }, getCharacter: { auth: "authenticated" },
+  getCloneVideo: { auth: "authenticated" },
+  cloneCheck: { auth: "subscription" }, createCharacter: { auth: "subscription" },
+  cloneStartingImage: { auth: "subscription" }, cloneVideo: { auth: "subscription" },
+  downloadTikTokVideo: { auth: "subscription" }, downloadInstagramVideo: { auth: "subscription" },
+  watchMedia: { auth: "subscription" }, extractMedia: { auth: "subscription" },
+  transcribeMedia: { auth: "subscription" }, checkSpec: { auth: "subscription" },
+  checkComplianceVideo: { auth: "subscription" }, checkCompliancePrompt: { auth: "subscription" },
+  createOverlay: { auth: "subscription" }, createDisclaimer: { auth: "subscription" },
+  scrapeTikTokProfile: { auth: "subscription" }, scrapeTikTokProfileVideos: { auth: "subscription" },
+  scrapeTikTokVideo: { auth: "subscription" }, scrapeTikTokVideoTranscript: { auth: "subscription" },
+  scrapeTikTokVideoComments: { auth: "subscription" }, scrapeTikTokSearchUsers: { auth: "subscription" },
+  scrapeTikTokTrending: { auth: "subscription" }, scrapeInstagramProfile: { auth: "subscription" },
+  scrapeInstagramUserPosts: { auth: "subscription" }, scrapeInstagramPost: { auth: "subscription" },
+  scrapeInstagramPostComments: { auth: "subscription" }, scrapeInstagramUserReels: { auth: "subscription" },
 };
 
 // ---------------------------------------------------------------------------
@@ -128,7 +107,10 @@ function extractOperations(spec: any): Operation[] {
           ""
         );
         requestBodyRequired = op.requestBody.required ?? false;
-      } else if (op.requestBody?.content?.["application/octet-stream"]) {
+      } else if (Object.entries(op.requestBody?.content ?? {}).some(
+        ([contentType, value]: [string, any]) =>
+          contentType === "application/octet-stream" || value?.schema?.format === "binary",
+      )) {
         isBinary = true;
       }
 
@@ -200,8 +182,8 @@ function emit(ops: Operation[]): string {
     const jsdocParts = [op.summary || op.operationId];
     if (meta) {
       if (meta.auth === "public") jsdocParts.push("Public endpoint.");
-      else if (meta.auth === "authenticated") jsdocParts.push("Auth required.");
-      else if (meta.auth === "paid") jsdocParts.push(`Auth required. ${meta.credits} credits.`);
+      else if (meta.auth === "authenticated") jsdocParts.push("Bearer API key required.");
+      else if (meta.auth === "subscription") jsdocParts.push("Active subscription and daily quota required.");
     }
     lines.push(`  /** ${jsdocParts.join(" ")} */`);
 

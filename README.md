@@ -6,7 +6,7 @@ Point it at a source video and it does three things:
 
 1. **Score it.** A clone check tells you whether the video will clone well before you spend anything on rendering.
 2. **Swap in your character.** Create a reusable character once, then reuse it across every clone.
-3. **Get a rendered clone.** Kling motion control maps the source motion onto your character and returns a 480p 9:16 video.
+3. **Get a rendered clone.** Kling 3.0 Motion Control maps the source motion onto your character while preserving the source soundtrack.
 
 Supporting endpoints cover discovery (scrape TikTok/Instagram), single-video download, and media processing (watch, extract, transcribe, overlay, compliance).
 
@@ -65,7 +65,7 @@ vidjutsu clone run "https://www.tiktok.com/@creator/video/123456789" \
 vidjutsu clone character list
 ```
 
-`clone run` downloads the source video, runs the clone check, builds a character-swapped starting frame, generates the clone video with Kling motion control, and waits for the final URL. It stops if the check verdict is weak, unless you pass `--force`. Add `--model seedance` to switch models.
+`clone run` downloads the source video, runs the clone check, extracts frame 0, builds a character-swapped starting frame, submits a Kling 3.0 Motion Control generation, and waits for the final URL. It stops if the check verdict is weak unless you pass `--force`. Source clips are limited to 15 seconds.
 
 ### SDK
 
@@ -86,10 +86,19 @@ const { data: source } = await vj.downloadTikTokVideo({
 const { data: check } = await vj.cloneCheck({ videoUrl: source.url });
 console.log(check.verdict, check.score);
 
-// 3. Build a character-swapped starting frame.
+// 3. Extract frame 0 and build a character-swapped starting frame.
+const { data: extracted } = await vj.extractMedia({
+  mediaUrl: source.url,
+  frames: [0],
+  audio: false,
+  metadata: false,
+});
+const firstFrame = extracted.frames?.[0]?.url;
+if (!firstFrame) throw new Error("No first frame returned");
+
 const { data: starting } = await vj.cloneStartingImage({
+  firstFrame,
   characterId: character.id,
-  sourceVideoUrl: source.url,
   prompt: "Match the framing and lighting of the source",
 });
 
@@ -97,9 +106,14 @@ const { data: starting } = await vj.cloneStartingImage({
 const { data: task } = await vj.cloneVideo({
   startingImageUrl: starting.imageUrl,
   sourceVideoUrl: source.url,
-  model: "kling",
+  model: "kling", // the only supported clone-video model
 });
-const { data: result } = await vj.getCloneVideo(task.id);
+let result;
+do {
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  ({ data: result } = await vj.getCloneVideo(task.id));
+} while (result.status === "processing");
+if (result.status === "failed") throw new Error(result.error);
 console.log(result.videoUrl);
 ```
 
@@ -174,7 +188,6 @@ Each endpoint has its own daily rate limit (fixed window, resets 00:00 UTC). Hit
 | `createReference` / `updateReference` / `listOrGetReferences` / `deleteReference` | References |
 | `createEditorProject` / `updateEditorProject` / `listOrGetEditorProjects` / `deleteEditorProject` | Editor projects |
 | `uploadFile(body)` / `uploadFromUrl(body)` | Upload media to the CDN |
-| `getJob(query)` / `getDistributionJob(query)` | Inspect durable jobs |
 
 ### Account and billing
 
