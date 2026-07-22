@@ -18,6 +18,14 @@ jobs:
 
       - run: bun install
 
+      - run: bun run generate
+
+      - run: bun run check:release
+
+      - run: bun test
+
+      - run: bun run build
+
       - name: Build standalone binaries
         run: bun run build:binary
 

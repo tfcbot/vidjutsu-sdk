@@ -13,7 +13,7 @@ export default defineCommand({
   meta: { name: "account", description: "Manage accounts" },
   subCommands: {
     create: defineCommand({
-      meta: { name: "create", description: "Create a draft account (0 credits)" },
+      meta: { name: "create", description: "Create a draft account (unmetered)" },
       args: {
         platform: { type: "string", description: "Platform (instagram)", required: true },
         name: { type: "string", description: "Account name", required: true },

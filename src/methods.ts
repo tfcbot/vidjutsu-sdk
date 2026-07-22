@@ -14,137 +14,137 @@ type ResBody<P extends keyof paths, M extends keyof paths[P]> = paths[P][M] exte
 type QueryParams<P extends keyof paths, M extends keyof paths[P]> = paths[P][M] extends { parameters: { query?: infer Q } } ? Q : never;
 
 export interface VidJutsuMethods {
-  /** Create account Auth required. */
+  /** Create account Bearer API key required. */
   createAccount(body: ReqBody<"/v1/accounts", "post">): ReturnType<Client["POST"]>;
-  /** Update account Auth required. */
+  /** Update account Bearer API key required. */
   updateAccount(body: ReqBody<"/v1/accounts", "put">, query?: QueryParams<"/v1/accounts", "put">): ReturnType<Client["PUT"]>;
-  /** List accounts or get by ID Auth required. */
+  /** List accounts or get by ID Bearer API key required. */
   listOrGetAccounts(query?: QueryParams<"/v1/accounts", "get">): ReturnType<Client["GET"]>;
-  /** Delete account Auth required. */
+  /** Delete account Bearer API key required. */
   deleteAccount(query?: QueryParams<"/v1/accounts", "delete">): ReturnType<Client["DELETE"]>;
   /** Recover API key Public endpoint. */
   recoverApiKey(body: ReqBody<"/v1/api_keys/recover", "post">): ReturnType<Client["POST"]>;
-  /** Rotate API key Auth required. */
+  /** Rotate API key Bearer API key required. */
   rotateApiKey(): ReturnType<Client["POST"]>;
-  /** Create asset from existing URL Auth required. */
+  /** Create asset from existing URL Bearer API key required. */
   createAsset(body: ReqBody<"/v1/assets", "post">): ReturnType<Client["POST"]>;
-  /** Update asset metadata Auth required. */
+  /** Update asset metadata Bearer API key required. */
   updateAsset(body: ReqBody<"/v1/assets", "put">, query?: QueryParams<"/v1/assets", "put">): ReturnType<Client["PUT"]>;
-  /** List assets or get by ID Auth required. */
+  /** List assets or get by ID Bearer API key required. */
   listOrGetAssets(query?: QueryParams<"/v1/assets", "get">): ReturnType<Client["GET"]>;
-  /** Delete asset (soft) Auth required. */
+  /** Delete asset (soft) Bearer API key required. */
   deleteAsset(query?: QueryParams<"/v1/assets", "delete">): ReturnType<Client["DELETE"]>;
-  /** Agent registration (auth.md) */
+  /** Agent registration (auth.md) Public endpoint. */
   signupAgent(body: ReqBody<"/v1/auth/agent", "post">): ReturnType<Client["POST"]>;
-  /** Initiate claim flow */
+  /** Initiate claim flow Public endpoint. */
   agentClaim(body: ReqBody<"/v1/auth/agent/claim", "post">): ReturnType<Client["POST"]>;
-  /** Complete claim flow */
+  /** Complete claim flow Public endpoint. */
   agentClaimComplete(body: ReqBody<"/v1/auth/agent/claim/complete", "post">): ReturnType<Client["POST"]>;
-  /** Revoke credential */
+  /** Revoke credential Public endpoint. */
   agentRevoke(): ReturnType<Client["POST"]>;
   /** Confirm email verification code Public endpoint. */
   confirmVerification(body: ReqBody<"/v1/auth/verify/confirm", "post">): ReturnType<Client["POST"]>;
   /** Request email verification code Public endpoint. */
   requestVerification(body: ReqBody<"/v1/auth/verify/request", "post">): ReturnType<Client["POST"]>;
-  /** Create a reusable, persisted character image */
+  /** Create a reusable, persisted character image Active subscription and daily quota required. */
   createCharacter(body: ReqBody<"/v1/characters", "post">): ReturnType<Client["POST"]>;
-  /** List your persisted characters */
+  /** List your persisted characters Bearer API key required. */
   listCharacters(): ReturnType<Client["GET"]>;
-  /** Fetch a persisted character by id */
+  /** Fetch a persisted character by id Bearer API key required. */
   getCharacter(id: string): ReturnType<Client["GET"]>;
-  /** Check spec Auth required. 5 credits. */
+  /** Check spec Active subscription and daily quota required. */
   checkSpec(body: ReqBody<"/v1/check", "post">): ReturnType<Client["POST"]>;
-  /** Get check rules Auth required. */
+  /** Get check rules Bearer API key required. */
   getCheckRules(): ReturnType<Client["GET"]>;
-  /** Update check rules Auth required. */
+  /** Update check rules Bearer API key required. */
   updateCheckRules(body: ReqBody<"/v1/check/rules", "put">): ReturnType<Client["PUT"]>;
-  /** Evaluate whether a source video can be cloned reliably */
+  /** Evaluate whether a source video can be cloned reliably Active subscription and daily quota required. */
   cloneCheck(body: ReqBody<"/v1/clones/check", "post">): ReturnType<Client["POST"]>;
-  /** Create a character-swapped starting frame */
+  /** Create a character-swapped starting frame Active subscription and daily quota required. */
   cloneStartingImage(body: ReqBody<"/v1/clones/starting-image", "post">): ReturnType<Client["POST"]>;
-  /** Clone source motion with Kling 3.0 Motion Control */
+  /** Clone source motion with Kling 3.0 Motion Control Active subscription and daily quota required. */
   cloneVideo(body: ReqBody<"/v1/clones/video", "post">): ReturnType<Client["POST"]>;
-  /** Poll a clone video task */
+  /** Poll a clone video task Bearer API key required. */
   getCloneVideo(id: string): ReturnType<Client["GET"]>;
-  /** Check prompt compliance */
+  /** Check prompt compliance Active subscription and daily quota required. */
   checkCompliancePrompt(body: ReqBody<"/v1/compliance/prompt", "post">): ReturnType<Client["POST"]>;
-  /** Check video compliance */
+  /** Check video compliance Active subscription and daily quota required. */
   checkComplianceVideo(body: ReqBody<"/v1/compliance/video", "post">): ReturnType<Client["POST"]>;
   /** Check checkout status Public endpoint. */
   getCheckoutStatus(query?: QueryParams<"/v1/credits/status", "get">): ReturnType<Client["GET"]>;
-  /** Burn fine-print disclaimer onto video */
+  /** Burn fine-print disclaimer onto video Active subscription and daily quota required. */
   createDisclaimer(body: ReqBody<"/v1/disclaimer", "post">): ReturnType<Client["POST"]>;
-  /** Extract from media Auth required. 5 credits. */
+  /** Extract from media Active subscription and daily quota required. */
   extractMedia(body: ReqBody<"/v1/extract", "post">): ReturnType<Client["POST"]>;
   /** API info Public endpoint. */
   getInfo(): ReturnType<Client["GET"]>;
-  /** Burn text overlay onto video Auth required. 5 credits. */
+  /** Burn text overlay onto video Active subscription and daily quota required. */
   createOverlay(body: ReqBody<"/v1/overlay", "post">): ReturnType<Client["POST"]>;
-  /** Create post Auth required. */
+  /** Create post Bearer API key required. */
   createPost(body: ReqBody<"/v1/posts", "post">): ReturnType<Client["POST"]>;
-  /** Update post Auth required. */
+  /** Update post Bearer API key required. */
   updatePost(body: ReqBody<"/v1/posts", "put">, query?: QueryParams<"/v1/posts", "put">): ReturnType<Client["PUT"]>;
-  /** List posts or get by ID Auth required. */
+  /** List posts or get by ID Bearer API key required. */
   listOrGetPosts(query?: QueryParams<"/v1/posts", "get">): ReturnType<Client["GET"]>;
-  /** Delete post Auth required. */
+  /** Delete post Bearer API key required. */
   deletePost(query?: QueryParams<"/v1/posts", "delete">): ReturnType<Client["DELETE"]>;
   /** Get pricing Public endpoint. */
   getPricing(): ReturnType<Client["GET"]>;
-  /** Create editor project */
+  /** Create editor project Bearer API key required. */
   createEditorProject(body: ReqBody<"/v1/projects", "post">): ReturnType<Client["POST"]>;
-  /** Update editor project */
+  /** Update editor project Bearer API key required. */
   updateEditorProject(body: ReqBody<"/v1/projects", "put">, query?: QueryParams<"/v1/projects", "put">): ReturnType<Client["PUT"]>;
-  /** List projects or get by ID */
+  /** List projects or get by ID Bearer API key required. */
   listOrGetEditorProjects(query?: QueryParams<"/v1/projects", "get">): ReturnType<Client["GET"]>;
-  /** Archive editor project (soft) */
+  /** Archive editor project (soft) Bearer API key required. */
   deleteEditorProject(query?: QueryParams<"/v1/projects", "delete">): ReturnType<Client["DELETE"]>;
-  /** Create reference Auth required. */
+  /** Create reference Bearer API key required. */
   createReference(body: ReqBody<"/v1/references", "post">): ReturnType<Client["POST"]>;
-  /** Update reference Auth required. */
+  /** Update reference Bearer API key required. */
   updateReference(body: ReqBody<"/v1/references", "put">, query?: QueryParams<"/v1/references", "put">): ReturnType<Client["PUT"]>;
-  /** List references or get by ID Auth required. */
+  /** List references or get by ID Bearer API key required. */
   listOrGetReferences(query?: QueryParams<"/v1/references", "get">): ReturnType<Client["GET"]>;
-  /** Delete reference Auth required. */
+  /** Delete reference Bearer API key required. */
   deleteReference(query?: QueryParams<"/v1/references", "delete">): ReturnType<Client["DELETE"]>;
-  /** Scrape Instagram post or reel Auth required. 1 credits. */
+  /** Scrape Instagram post or reel Active subscription and daily quota required. */
   scrapeInstagramPost(body: ReqBody<"/v1/scrape/instagram/post", "post">): ReturnType<Client["POST"]>;
-  /** Scrape Instagram post comments Auth required. 1 credits. */
+  /** Scrape Instagram post comments Active subscription and daily quota required. */
   scrapeInstagramPostComments(body: ReqBody<"/v1/scrape/instagram/post/comments", "post">): ReturnType<Client["POST"]>;
-  /** Scrape Instagram profile Auth required. 1 credits. */
+  /** Scrape Instagram profile Active subscription and daily quota required. */
   scrapeInstagramProfile(body: ReqBody<"/v1/scrape/instagram/profile", "post">): ReturnType<Client["POST"]>;
-  /** Scrape Instagram user posts Auth required. 1 credits. */
+  /** Scrape Instagram user posts Active subscription and daily quota required. */
   scrapeInstagramUserPosts(body: ReqBody<"/v1/scrape/instagram/user/posts", "post">): ReturnType<Client["POST"]>;
-  /** Scrape Instagram user reels Auth required. 1 credits. */
+  /** Scrape Instagram user reels Active subscription and daily quota required. */
   scrapeInstagramUserReels(body: ReqBody<"/v1/scrape/instagram/user/reels", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok profile Auth required. 1 credits. */
+  /** Scrape TikTok profile Active subscription and daily quota required. */
   scrapeTikTokProfile(body: ReqBody<"/v1/scrape/tiktok/profile", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok profile videos Auth required. 1 credits. */
+  /** Scrape TikTok profile videos Active subscription and daily quota required. */
   scrapeTikTokProfileVideos(body: ReqBody<"/v1/scrape/tiktok/profile/videos", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok user search Auth required. 1 credits. */
+  /** Scrape TikTok user search Active subscription and daily quota required. */
   scrapeTikTokSearchUsers(body: ReqBody<"/v1/scrape/tiktok/search/users", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok trending feed Auth required. 1 credits. */
+  /** Scrape TikTok trending feed Active subscription and daily quota required. */
   scrapeTikTokTrending(body: ReqBody<"/v1/scrape/tiktok/trending", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok video Auth required. 1 credits. */
+  /** Scrape TikTok video Active subscription and daily quota required. */
   scrapeTikTokVideo(body: ReqBody<"/v1/scrape/tiktok/video", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok video comments Auth required. 1 credits. */
+  /** Scrape TikTok video comments Active subscription and daily quota required. */
   scrapeTikTokVideoComments(body: ReqBody<"/v1/scrape/tiktok/video/comments", "post">): ReturnType<Client["POST"]>;
-  /** Scrape TikTok video transcript Auth required. 1 credits. */
+  /** Scrape TikTok video transcript Active subscription and daily quota required. */
   scrapeTikTokVideoTranscript(body: ReqBody<"/v1/scrape/tiktok/video/transcript", "post">): ReturnType<Client["POST"]>;
   /** Create subscription Public endpoint. */
   createSubscription(body: ReqBody<"/v1/subscribe", "post">): ReturnType<Client["POST"]>;
-  /** Transcribe media Auth required. 10 credits. */
+  /** Transcribe media Active subscription and daily quota required. */
   transcribeMedia(body: ReqBody<"/v1/transcribe", "post">): ReturnType<Client["POST"]>;
-  /** Upload file Auth required. */
-  uploadFile(): ReturnType<Client["POST"]>;
-  /** Upload from URL Auth required. */
+  /** Upload file Bearer API key required. */
+  uploadFile(body: Blob | ArrayBuffer | ReadableStream): ReturnType<Client["POST"]>;
+  /** Upload from URL Bearer API key required. */
   uploadFromUrl(body: ReqBody<"/v1/upload/url", "post">): ReturnType<Client["POST"]>;
-  /** Get daily usage */
+  /** Get daily usage Bearer API key required. */
   getUsage(): ReturnType<Client["GET"]>;
-  /** Import an Instagram video into VidJutsu Auth required. 1 credits. */
+  /** Import an Instagram video into VidJutsu Active subscription and daily quota required. */
   downloadInstagramVideo(body: ReqBody<"/v1/videos/download/instagram", "post">): ReturnType<Client["POST"]>;
-  /** Import a TikTok video into VidJutsu Auth required. 1 credits. */
+  /** Import a TikTok video into VidJutsu Active subscription and daily quota required. */
   downloadTikTokVideo(body: ReqBody<"/v1/videos/download/tiktok", "post">): ReturnType<Client["POST"]>;
-  /** Watch media Auth required. 10 credits. */
+  /** Watch media Active subscription and daily quota required. */
   watchMedia(body: ReqBody<"/v1/watch", "post">): ReturnType<Client["POST"]>;
 }
 
@@ -330,8 +330,12 @@ export function bindMethods(client: Client): VidJutsuMethods {
     transcribeMedia(body) {
       return client.POST("/v1/transcribe" as any, { body } as any);
     },
-    uploadFile() {
-      return client.POST("/v1/upload" as any, {} as any);
+    uploadFile(body) {
+      return client.POST("/v1/upload" as any, {
+        body: body as any,
+        bodySerializer: (b: any) => b,
+        headers: { "Content-Type": "application/octet-stream" },
+      } as any);
     },
     uploadFromUrl(body) {
       return client.POST("/v1/upload/url" as any, { body } as any);

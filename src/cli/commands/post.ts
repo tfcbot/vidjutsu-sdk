@@ -13,7 +13,7 @@ export default defineCommand({
   meta: { name: "post", description: "Manage posts" },
   subCommands: {
     create: defineCommand({
-      meta: { name: "create", description: "Create a draft post (0 credits)" },
+      meta: { name: "create", description: "Create a draft post (unmetered)" },
       args: {
         account: { type: "string", description: "Account ID" },
         video: { type: "string", description: "Video ID" },
