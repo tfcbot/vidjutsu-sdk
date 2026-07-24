@@ -23,6 +23,29 @@ function requireCharacterId(value: string): string {
   return value;
 }
 
+function requireDirectHttpsVideoUrl(value: string): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("videoUrl must be a valid public HTTPS MP4 URL");
+  }
+  if (url.protocol !== "https:" || url.username || url.password) {
+    throw new Error("videoUrl must be a valid public HTTPS MP4 URL");
+  }
+  const hostname = url.hostname.toLowerCase();
+  if (
+    ["tiktok.com", "instagram.com"].some(
+      (host) => hostname === host || hostname.endsWith(`.${host}`),
+    )
+  ) {
+    throw new Error(
+      "Social post URLs must be downloaded/staged first; pass the returned CDN url to clone check",
+    );
+  }
+  return url.toString();
+}
+
 interface CloneVideoStatus {
   id: string;
   status: "processing" | "completed" | "failed";
@@ -62,12 +85,10 @@ export default defineCommand({
       },
       args: {
         videoUrl: { type: "positional", description: "Public HTTPS URL of the source video", required: true },
-        context: { type: "string", description: "Optional context about the intended clone" },
       },
       async run({ args }) {
         const result = (await apiRequest("POST", "/v1/clones/check", {
-          videoUrl: args.videoUrl,
-          context: args.context,
+          videoUrl: requireDirectHttpsVideoUrl(args.videoUrl),
         })) as { verdict: string; score: number; evidence: string[]; model: string };
 
         console.log(`Verdict: ${result.verdict}`);
@@ -258,7 +279,14 @@ export default defineCommand({
         console.log(`Downloading ${args.tiktokUrl}...`);
         const download = (await apiRequest("POST", "/v1/videos/download/tiktok", {
           url: args.tiktokUrl,
-        })) as { url: string; assetId: string };
+        })) as {
+          url: string;
+          assetId: string;
+          metadata: { caption?: string };
+        };
+        if (download.metadata.caption) {
+          console.log(`Original caption: ${download.metadata.caption}`);
+        }
 
         console.log("Checking cloneability...");
         const check = (await apiRequest("POST", "/v1/clones/check", {

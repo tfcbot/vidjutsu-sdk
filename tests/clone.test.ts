@@ -72,18 +72,26 @@ describe("clone check", () => {
     expect(exit.calls).toEqual([]);
   });
 
-  test("http:// URL surfaces the API 400", async () => {
-    globalThis.fetch = (async () =>
-      jsonResponse(
-        { error: "invalid_request", message: "videoUrl must use https" },
-        400,
-      )) as typeof fetch;
-
+  test("rejects http:// before making an API request", async () => {
+    globalThis.fetch = (async () => {
+      throw new Error("request must not be sent");
+    }) as typeof fetch;
     await expect(
       runCommand(cloneCommand, {
         rawArgs: ["check", "http://cdn.vidjutsu.ai/staged/clip.mp4"],
       }),
-    ).rejects.toThrow("videoUrl must use https");
+    ).rejects.toThrow("valid public HTTPS MP4 URL");
+  });
+
+  test("rejects a social page with a download/stage-first instruction", async () => {
+    globalThis.fetch = (async () => {
+      throw new Error("request must not be sent");
+    }) as typeof fetch;
+    await expect(
+      runCommand(cloneCommand, {
+        rawArgs: ["check", "https://www.tiktok.com/@creator/video/1"],
+      }),
+    ).rejects.toThrow("downloaded/staged first");
   });
 });
 
@@ -106,6 +114,7 @@ describe("clone run", () => {
           size: 1024,
           sha256: "a".repeat(64),
           reused: false,
+          metadata: {},
         });
       }
       if (request.url.endsWith("/v1/clones/check")) {
@@ -210,6 +219,7 @@ describe("clone run", () => {
           size: 1024,
           sha256: "a".repeat(64),
           reused: false,
+          metadata: {},
         });
       }
       if (request.url.endsWith("/v1/clones/check")) {

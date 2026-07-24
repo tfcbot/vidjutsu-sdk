@@ -298,7 +298,7 @@ export interface paths {
         put?: never;
         /**
          * Evaluate whether a source video can be cloned reliably
-         * @description Runs a synchronous, deterministic cloneability analysis of a staged source video and returns a verdict (strong, possible, or weak), a 0-100 score, and the evidence behind them, so the agent can branch on the result, for example stopping on a weak verdict. The videoUrl must be public HTTPS and staged first: provider CDNs cannot fetch TikTok or Instagram links directly, so download the source with /v1/videos/download/tiktok or /v1/videos/download/instagram before checking it. The source video must be at most ~2 minutes long. Shares the daily clone admission limit.
+         * @description Synchronously analyzes a directly fetchable public HTTPS MP4 and returns a verdict, score, evidence, and model. TikTok and Instagram post pages must first be staged with their video download endpoint, then the exact returned CDN URL passed as videoUrl. The source must be an MP4 no larger than 50 MB and no longer than 15 seconds. Captions and overlays that can be removed and reapplied do not independently reduce cloneability. Shares the daily clone admission limit.
          */
         post: operations["cloneCheck"];
         delete?: never;
@@ -935,7 +935,7 @@ export interface paths {
         put?: never;
         /**
          * Import an Instagram video into VidJutsu
-         * @description Imports the primary video from an Instagram post or reel into tenant-owned VidJutsu storage. Repeated imports reuse the same immutable asset.
+         * @description Accepts an Instagram post or reel URL, extracts the primary MP4 and normalized metadata from one provider response, and stores the MP4 in tenant-owned VidJutsu storage. The tenant cache is checked first; repeated imports return the stored CDN URL and metadata without provider or media fetches. Older cached assets return metadata: {} and are not backfilled.
          */
         post: operations["downloadInstagramVideo"];
         delete?: never;
@@ -955,7 +955,7 @@ export interface paths {
         put?: never;
         /**
          * Import a TikTok video into VidJutsu
-         * @description Imports the primary video from a TikTok post into tenant-owned VidJutsu storage. Repeated imports reuse the same immutable asset.
+         * @description Accepts a TikTok post URL, extracts the primary MP4 and normalized metadata from one provider response, and stores the MP4 in tenant-owned VidJutsu storage. The tenant cache is checked first; repeated imports return the stored CDN URL and metadata without provider or media fetches. Older cached assets return metadata: {} and are not backfilled.
          */
         post: operations["downloadTikTokVideo"];
         delete?: never;
@@ -1269,23 +1269,21 @@ export interface components {
         CloneCheckRequest: {
             /**
              * Format: uri
-             * @description Public HTTPS URL of the source video to evaluate. http:// URLs are rejected.
+             * @description Public HTTPS URL of a directly fetchable MP4. Social post and webpage URLs must be staged first.
              */
             videoUrl: string;
-            /** @description Optional freeform context about the intended clone (product, character, constraints) to sharpen the analysis. */
-            context?: string;
         };
         CloneCheckResponse: {
             /** @description Overall cloneability verdict: "strong" clones reliably, "possible" may need retries or manual QA, "weak" is unlikely to clone well. */
             verdict: components["schemas"]["CloneCheckVerdict"];
             /**
              * Format: int32
-             * @description Cloneability score from 0 (unusable) to 100 (ideal source).
+             * @description Server-calculated cloneability score from 0 (unusable) to 100 (ideal source), derived from a fixed rubric.
              */
             score: number;
             /** @description Concrete observations from the video that support the verdict. */
             evidence: string[];
-            /** @description Provider model id that produced the analysis. */
+            /** @description Provider model id that produced the structured observations used by the server rubric. */
             model: string;
         };
         /** @enum {string} */
@@ -1802,9 +1800,48 @@ export interface components {
             size: number;
             sha256: string;
             reused: boolean;
+            /** @description Normalized source metadata. Always present; older cached assets return an empty object. */
+            metadata: components["schemas"]["SocialVideoMetadata"];
+        };
+        SocialVideoMetadata: {
+            /** @description Original post caption, when provided by the source. */
+            caption?: string;
+            /** @description Source account handle without the @ prefix. */
+            authorHandle?: string;
+            /** @description Source account display name. */
+            authorName?: string;
+            /** @description Unique hashtags parsed from the caption, without # prefixes. */
+            hashtags?: string[];
+            /**
+             * Format: int64
+             * @description Source post timestamp in Unix epoch milliseconds.
+             */
+            postedAt?: number;
+            /**
+             * Format: double
+             * @description Source video duration in seconds.
+             */
+            durationSeconds?: number;
+            /**
+             * Format: uri
+             * @description Source cover image URL.
+             */
+            coverUrl?: string;
+            /** @description Available engagement counts from the source response. */
+            stats?: components["schemas"]["SocialVideoStats"];
         };
         /** @enum {string} */
         SocialVideoPlatform: "tiktok" | "instagram";
+        SocialVideoStats: {
+            /** Format: int64 */
+            views?: number;
+            /** Format: int64 */
+            likes?: number;
+            /** Format: int64 */
+            comments?: number;
+            /** Format: int64 */
+            shares?: number;
+        };
         SubscriptionCreateRequest: {
             email: string;
         };
@@ -2492,8 +2529,44 @@ export interface operations {
                     "application/json": components["schemas"]["CloneCheckResponse"];
                 };
             };
+            /** @description The URL is invalid or points to a TikTok/Instagram post page that must be staged first. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
             /** @description HTTP 403 Forbidden — a valid API key with no active subscription called a gated endpoint. Body is the standard ApiError with error="subscription_required". */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The fetched media exceeds the 50 MB clone-check limit. */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The URL did not resolve to an MP4 container. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description The MP4 exceeds the 15-second clone-source limit. */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };
