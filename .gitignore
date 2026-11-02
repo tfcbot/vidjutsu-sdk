@@ -1,5 +1,3 @@
 node_modules/
 dist/
 bun.lock
-src/schema.d.ts
-src/methods.ts

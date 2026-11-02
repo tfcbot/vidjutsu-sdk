@@ -1,0 +1,105 @@
+import { describe, expect, test } from "bun:test";
+import { sha256Hex, VidJutsu, VidJutsuError } from "../src/client";
+
+type Call = { url: string; method: string; headers: Record<string, string>; body?: unknown };
+
+function fake(answer: (call: Call) => Response) {
+  const calls: Call[] = [];
+  const fetcher = (async (url: string, init: RequestInit = {}) => {
+    const call: Call = {
+      url,
+      method: init.method ?? "GET",
+      headers: (init.headers ?? {}) as Record<string, string>,
+      body: init.body,
+    };
+    calls.push(call);
+    return answer(call);
+  }) as unknown as typeof fetch;
+  return { calls, fetcher };
+}
+const json = (value: unknown, status = 200, headers: Record<string, string> = {}) =>
+  new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json", ...headers } });
+
+describe("VidJutsu", () => {
+  test("sends the key, JSON and idempotency key", async () => {
+    const { calls, fetcher } = fake(() => json({ job_id: "j1", state: "queued" }, 202));
+    const api = new VidJutsu({ apiKey: "vj_live_x", baseUrl: "https://api.test/", fetch: fetcher });
+    const job = await api.render("film", { range_seconds: 10 }, "k1");
+    expect(job.job_id).toBe("j1");
+    expect(calls[0]!.url).toBe("https://api.test/v3/projects/film/renders");
+    expect(calls[0]!.headers.authorization).toBe("Bearer vj_live_x");
+    expect(calls[0]!.headers["idempotency-key"]).toBe("k1");
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ range_seconds: 10 });
+  });
+
+  test("errors carry the code and the link that fixes a 402", async () => {
+    const { fetcher } = fake(() =>
+      json({ code: "no_plan", message: "subscribe first", checkout_url: "https://checkout.stripe.com/x" }, 402),
+    );
+    const api = new VidJutsu({ apiKey: "k", fetch: fetcher });
+    const error = await api.render("film").catch((e) => e);
+    expect(error).toBeInstanceOf(VidJutsuError);
+    expect(error.code).toBe("no_plan");
+    expect(error.status).toBe(402);
+    expect(error.fixUrl).toBe("https://checkout.stripe.com/x");
+  });
+
+  test("path parameters are escaped", async () => {
+    const { calls, fetcher } = fake(() => json({}));
+    await new VidJutsu({ fetch: fetcher }).show("a/b");
+    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/v3/projects/a%2Fb");
+  });
+
+  test("upload sends each part to its link and completes with the ETags", async () => {
+    const data = new Uint8Array(10).map((_, i) => i);
+    const hash = await sha256Hex(data);
+    const { calls, fetcher } = fake((call) => {
+      if (call.url.endsWith("/v3/uploads")) {
+        return json({
+          upload_id: "up_1",
+          already_stored: false,
+          part_size: 6,
+          parts: [
+            { number: 1, url: "https://r2.test/p1" },
+            { number: 2, url: "https://r2.test/p2" },
+          ],
+        });
+      }
+      if (call.url.startsWith("https://r2.test/")) {
+        return new Response(null, { status: 200, headers: { etag: `"e-${call.url.slice(-1)}"` } });
+      }
+      return json({ media: { id: "take1" }, audio: null });
+    });
+    const done = await new VidJutsu({ apiKey: "k", fetch: fetcher }).upload("take1.mp4", data);
+    expect(done.media.id).toBe("take1");
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ name: "take1.mp4", bytes: 10, sha256: hash });
+    expect((calls[1]!.body as Uint8Array).byteLength).toBe(6);
+    expect((calls[2]!.body as Uint8Array).byteLength).toBe(4);
+    expect(calls[3]!.url).toBe("https://api.vidjutsu.ai/v3/uploads/up_1/complete");
+    expect(JSON.parse(calls[3]!.body as string)).toEqual({
+      parts: [
+        { number: 1, etag: '"e-1"' },
+        { number: 2, etag: '"e-2"' },
+      ],
+    });
+  });
+
+  test("an already stored file completes with no parts", async () => {
+    const { calls, fetcher } = fake((call) =>
+      call.url.endsWith("/v3/uploads")
+        ? json({ upload_id: "up_2", already_stored: true, part_size: 0, parts: [] })
+        : json({ media: { id: "x" }, audio: null }),
+    );
+    await new VidJutsu({ fetch: fetcher }).upload("x.mp4", new Uint8Array([1]));
+    expect(calls).toHaveLength(2);
+    expect(JSON.parse(calls[1]!.body as string)).toEqual({ parts: [] });
+  });
+
+  test("waitForRender polls until the job ends", async () => {
+    const states = ["queued", "running", "succeeded"];
+    const { calls, fetcher } = fake(() => json({ job_id: "j", state: states.shift() }));
+    const job = await new VidJutsu({ fetch: fetcher }).waitForRender("j", { intervalMs: 1 });
+    expect(job.state).toBe("succeeded");
+    expect(calls).toHaveLength(3);
+  });
+});

@@ -1,7 +1,7 @@
 {
   "name": "vidjutsu",
-  "version": "1.4.0",
-  "description": "VidJutsu — video intelligence API. SDK + CLI.",
+  "version": "2.0.0",
+  "description": "VidJutsu Cloud: video editing for agents. SDK + CLI for api.vidjutsu.ai.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,8 +19,8 @@
     "install.sh"
   ],
   "scripts": {
-    "generate": "bun scripts/generate-schema.ts && bun scripts/generate-methods.ts",
     "test": "bun test",
+    "typecheck": "tsc --noEmit -p tsconfig.check.json",
     "check:release": "bun scripts/check-release.ts",
     "build": "bun run build:sdk && bun run build:cli",
     "build:sdk": "tsc",
@@ -31,31 +31,28 @@
     "build:binary:linux-x64": "bun build src/cli/index.ts --compile --target=bun-linux-x64 --outfile dist/vidjutsu-linux-x64",
     "build:binary:linux-arm64": "bun build src/cli/index.ts --compile --target=bun-linux-arm64 --outfile dist/vidjutsu-linux-arm64",
     "dev": "bun run src/cli/index.ts",
-    "prepublishOnly": "bun run generate && bun run check:release && bun test && bun run build"
+    "prepublishOnly": "bun run check:release && bun test && bun run build"
   },
-  "dependencies": {
-    "citty": "^0.1",
-    "openapi-fetch": "^0.13.5"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/node": "^25.6.0",
-    "openapi-typescript": "^7.8.0",
     "typescript": "^5.7.0"
   },
   "keywords": [
     "vidjutsu",
     "video",
-    "ai",
+    "editing",
+    "agents",
+    "mcp",
+    "render",
     "api",
     "sdk",
-    "cli",
-    "watch",
-    "extract",
-    "transcribe"
+    "cli"
   ],
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/tfcbot/vidjutsu-sdk"
-  }
+  },
+  "homepage": "https://vidjutsu.ai"
 }
