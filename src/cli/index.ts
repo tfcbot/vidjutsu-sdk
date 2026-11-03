@@ -49,6 +49,8 @@ History
 Shot list
   shot-list <project>                The scenes, shots and the files filed under each
   shot-list edit <project> <ops.json | -> [--expected-revision <n>]
+  shot-list import <project> <episode.json | -> [--replace] [--expected-revision <n>]
+                                     Bring an episode plan in as the shot list
 
 Layouts and sound
   layouts [list | save <file.json> | delete <layout_id>]
@@ -395,6 +397,15 @@ async function run(argv: string[]) {
       );
     case "shot-list":
     case "shotlist": {
+      if (rest[0] === "import") {
+        const api = client();
+        const project = need(rest[1], "project");
+        const file = need(rest[2], "episode file (episode.json, or - for stdin)");
+        const episode = JSON.parse(readFileSync(file === "-" ? 0 : file, "utf8"));
+        let expected = int(args, "expected-revision");
+        if (expected === undefined) expected = Number((await api.shotList(project)).revision ?? 0);
+        return print(await api.shotListImport(project, expected, episode, args.flags.replace ? { replace: true } : {}));
+      }
       if (rest[0] !== "edit") return print(await client().shotList(need(rest[0], "project")));
       const api = client();
       const project = need(rest[1], "project");

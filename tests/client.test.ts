@@ -215,4 +215,11 @@ describe("VidJutsu", () => {
     expect(JSON.parse(calls[1]!.body as string)).toEqual({ sections: [{ name: "Intro", from: 0, to: 30 }] });
     expect(JSON.parse(calls[2]!.body as string).files[0].media).toBe("h1");
   });
+
+  test("shot list import sends the episode and the revision it was read at", async () => {
+    const { calls, fetcher } = fake(() => json({ revision: 1, created: ["g1"] }));
+    await new VidJutsu({ fetch: fetcher }).shotListImport("film", 0, { schemaVersion: 2, groups: [] }, { replace: true });
+    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/projects/film/shot-list/import");
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ expected_revision: 0, episode: { schemaVersion: 2, groups: [] }, replace: true });
+  });
 });

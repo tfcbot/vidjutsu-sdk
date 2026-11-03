@@ -42,6 +42,7 @@ for your edits.
 ```sh
 vidjutsu shot-list film                  # the plan: scenes, shots and their takes
 vidjutsu shot-list edit film plan.json   # add_scene, add_shot, attach_media, ...
+vidjutsu shot-list import film episode.json  # an episode plan as scenes and shots
 vidjutsu words film                      # the words on the edited timeline
 vidjutsu search film "the launch"        # find words in every file
 vidjutsu working-on film "Tightening the intro" --from 0 --to 30
@@ -69,7 +70,7 @@ REST operations, and the SDK has one method for each:
 | Media | `ingest`, `create_upload`, `complete_upload`, `abort_upload`, `media_url`, `make_preview`, `media_preview`, `make_transcript`, `media_transcript` |
 | Projects | `list_projects`, `init`, `import_timeline`, `show`, `head`, `edit`, `level`, `timeline_words`, `files`, `search_words` |
 | History | `history`, `undo`, `restore` |
-| Shot list | `shot_list`, `shot_list_edit` |
+| Shot list | `shot_list`, `shot_list_edit`, `shot_list_import` |
 | Layouts | `layouts`, `save_layout`, `delete_layout`, `apply_layout` |
 | Sound | `studio_sound` |
 | Look and check | `frame`, `check` |
