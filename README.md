@@ -110,6 +110,8 @@ carries `fixUrl`, the Stripe link that fixes it (sign-up or top-up).
 
 ## Release
 
-Bump `package.json` and `src/cli/version.ts` together, merge, then push the tag
-`v<version>`. The tag publishes to npm (trusted publishing) and attaches the
-standalone binaries to a GitHub release.
+Bump `package.json` and `src/cli/version.ts` together and merge. CI then
+builds the standalone binaries and opens a **draft** release `v<version>` on the
+[releases page](https://github.com/tfcbot/vidjutsu-sdk/releases). Review it and
+click **Publish release**: that creates the tag and publishes the package to npm
+(trusted publishing). Nothing is public until you publish the draft.

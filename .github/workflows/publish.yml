@@ -1,13 +1,20 @@
 name: Publish to npm
 
+# Runs when a release is published on GitHub. Release CLI drafts a release
+# for each new version merged to main; a person reviews the draft on the
+# releases page and clicks Publish, which creates the v<version> tag and
+# publishes that version to npm here.
 on:
-  push:
-    tags:
-      - 'v*'
+  release:
+    types: [published]
 
 permissions:
   id-token: write
   contents: read
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
 
 jobs:
   publish:
@@ -27,7 +34,7 @@ jobs:
 
       - run: bun install
 
-
+      # Fails if the release's tag isn't v<package.json version>.
       - run: bun run check:release
 
       - run: bun test
