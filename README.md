@@ -53,6 +53,9 @@ vidjutsu studio-sound film               # clean every voice (about 1.5 cents a 
 vidjutsu events film --follow            # live change notices
 vidjutsu render film --captions --out film.mp4  # captions burned in, no extra charge
 vidjutsu captions film --format vtt --out film.vtt
+vidjutsu frame film 41.967 42            # stills either side of a cut, as the render draws them
+vidjutsu check film                      # gaps, black, silence, loudness and gains
+vidjutsu import film descript.fcpxml --files ingested.json  # open a Descript export
 ```
 
 ## Agents (MCP)
@@ -64,11 +67,12 @@ REST operations, and the SDK has one method for each:
 | Area | Tools |
 | --- | --- |
 | Media | `ingest`, `create_upload`, `complete_upload`, `abort_upload`, `media_url`, `make_preview`, `media_preview`, `make_transcript`, `media_transcript` |
-| Projects | `list_projects`, `init`, `show`, `head`, `edit`, `level`, `timeline_words`, `files`, `search_words` |
+| Projects | `list_projects`, `init`, `import_timeline`, `show`, `head`, `edit`, `level`, `timeline_words`, `files`, `search_words` |
 | History | `history`, `undo`, `restore` |
 | Shot list | `shot_list`, `shot_list_edit` |
 | Layouts | `layouts`, `save_layout`, `delete_layout`, `apply_layout` |
 | Sound | `studio_sound` |
+| Look and check | `frame`, `check` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
 | Renders and prices | `quote`, `render` (with burned-in `captions`), `captions` (SRT or WebVTT), `render_status`, `cancel_render` |
 | Account | `account`, `create_account`, `usage`, `wallet`, `entitlements`, `create_key`, `list_keys`, `revoke_key`, `billing_checkout`, `billing_top_up`, `billing_auto_top_up`, `billing_portal` |
