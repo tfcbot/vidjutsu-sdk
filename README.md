@@ -49,7 +49,7 @@ vidjutsu history film                    # every revision, with its author and c
 vidjutsu undo film <revision> --change 0 # undo one change, keeping later edits
 vidjutsu layout film circle_corner       # screen and camera with a preset
 vidjutsu quote film                      # what a render or Studio Sound would cost
-vidjutsu studio-sound film               # clean every voice ($0.10 a voice minute)
+vidjutsu studio-sound film               # clean every voice (about 1.5 cents a voice minute)
 vidjutsu events film --follow            # live change notices
 vidjutsu render film --captions --out film.mp4  # captions burned in, no extra charge
 vidjutsu captions film --format vtt --out film.vtt
