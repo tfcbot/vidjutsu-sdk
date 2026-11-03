@@ -55,6 +55,8 @@ vidjutsu events film --follow            # live change notices
 vidjutsu frame film 41.967 42            # stills either side of a cut, as the render draws them
 vidjutsu check film                      # gaps, black, silence, loudness and gains
 vidjutsu import film descript.fcpxml --files ingested.json  # open a Descript export
+vidjutsu render film --captions          # burn in captions (no extra charge)
+vidjutsu captions film --format vtt      # the captions as a WebVTT file
 ```
 
 ## Agents (MCP)
@@ -73,9 +75,8 @@ REST operations, and the SDK has one method for each:
 | Sound | `studio_sound` |
 | Look and check | `frame`, `check` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
-| Renders and prices | `quote`, `render`, `render_status`, `cancel_render` |
+| Renders and prices | `quote`, `render`, `render_status`, `cancel_render`, `captions` |
 
-Captions (burned in with `render --captions`, or as SRT or WebVTT with `captions`) are coming soon: the commands are in this release, and the cloud turns them on shortly.
 | Account | `account`, `create_account`, `usage`, `wallet`, `entitlements`, `create_key`, `list_keys`, `revoke_key`, `billing_checkout`, `billing_top_up`, `billing_auto_top_up`, `billing_portal` |
 
 ## SDK

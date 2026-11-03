@@ -77,8 +77,8 @@ Working together
 Prices and renders
   quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
   render <project> [--json <body>] [--no-wait] [--out <file>]
-         [--captions] [--captions-position top] [--captions-size small|large] [--captions-background none] (captions: coming soon)
-  captions <project> [--format srt|vtt] [--revision <r>] [--out <file>]   The cut's captions (coming soon)
+         [--captions] [--captions-position top] [--captions-size small|large] [--captions-background none]   Burn in captions (no extra charge)
+  captions <project> [--format srt|vtt] [--revision <r>] [--out <file>]   The cut's captions as SRT or WebVTT (free)
   status <job_id> | cancel <job_id>
   download <job_id> [--out <file>]   Save a finished render
 
