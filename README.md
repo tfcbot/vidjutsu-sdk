@@ -83,11 +83,11 @@ Captions (burned in with `render --captions`, or as SRT or WebVTT with `captions
 ```ts
 import { VidJutsu } from "vidjutsu";
 
-const api = new VidJutsu({ apiKey: process.env.VIDJUTSU_API_KEY });
-const take = await api.upload("take1.mp4", bytes);
-await api.init("film");
-const job = await api.render("film");
-const done = await api.waitForRender(job.job_id);
+const client = new VidJutsu({ apiKey: process.env.VIDJUTSU_API_KEY });
+const take = await client.upload("take1.mp4", bytes);
+await client.init("film");
+const job = await client.render("film");
+const done = await client.waitForRender(job.job_id);
 console.log(done.output);
 ```
 
@@ -95,12 +95,12 @@ The API is versioned by date, like Stripe: every request carries
 `VidJutsu-Version: <YYYY-MM-DD>`. The SDK sends the version it was built
 against (`API_VERSION`); pass `apiVersion` to pin another.
 
-`api.stream(project)` is the project's live stream (Server-Sent Events): an
+`client.stream(project)` is the project's live stream (Server-Sent Events): an
 async iterator of `{event, id?, data}` that reconnects on its own and resumes
 from the last notice it saw.
 
 ```ts
-for await (const { event, data } of api.stream("film")) {
+for await (const { event, data } of client.stream("film")) {
   if (event === "revision") console.log("new revision by", data);
 }
 ```
