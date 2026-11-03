@@ -2,7 +2,7 @@
 set -e
 
 # VidJutsu CLI Installer
-# Usage: curl -fsSL https://vidjutsu.ai/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/tfcbot/vidjutsu-sdk/main/install.sh | sh
 
 REPO="tfcbot/vidjutsu-sdk"
 BINARY_NAME="vidjutsu"
@@ -147,9 +147,9 @@ main() {
 
   printf "\n${GREEN}${BOLD}  ✓ VidJutsu CLI v${VERSION} installed successfully${RESET}\n"
   printf "\n  Get started:\n"
-  printf "    ${CYAN}vidjutsu auth${RESET}       — authenticate your account\n"
-  printf "    ${CYAN}vidjutsu clone --help${RESET} — clone a staged short video\n"
-  printf "    ${CYAN}vidjutsu --help${RESET}     — see all commands\n\n"
+  printf "    ${CYAN}vidjutsu login${RESET}            sign up or sign in with an emailed code\n"
+  printf "    ${CYAN}vidjutsu billing checkout${RESET} add a card and fund your wallet (\$5 minimum)\n"
+  printf "    ${CYAN}vidjutsu --help${RESET}           see all commands\n\n"
 }
 
 main
