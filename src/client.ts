@@ -453,7 +453,7 @@ export class VidJutsu {
 
   // ---- Studio Sound and prices ----
 
-  /** Turn on Studio Sound: clean every voice and swap the cleaned copies onto their clips. $0.10 a voice minute. */
+  /** Turn on Studio Sound: clean every voice and swap the cleaned copies onto their clips. Billed by box time like every job (about 1.5 cents a voice minute); check with quote(). */
   studioSound(project: string, options: { media?: string[]; branch?: string } = {}, idempotencyKey?: string) {
     return this.request<StartedJob>("POST", `/projects/${seg(project)}/studio-sound`, options, idempotencyKey);
   }

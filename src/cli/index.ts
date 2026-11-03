@@ -53,7 +53,7 @@ Shot list
 Layouts and sound
   layouts [list | save <file.json> | delete <layout_id>]
   layout <project> <preset> [--from <t>] [--to <t>]   Lay out screen and camera with a preset
-  studio-sound <project> [--media <id,id>] [--no-wait] Clean every voice ($0.10 a voice minute)
+  studio-sound <project> [--media <id,id>] [--no-wait] Clean every voice (billed by box time)
   level <project> --tracks <a1,a2> [--target <lufs>] [--dry-run]
 
 Working together
