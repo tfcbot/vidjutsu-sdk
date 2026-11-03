@@ -15,9 +15,11 @@ const HELP = `vidjutsu ${VERSION}: video editing for agents, in the cloud.
 Account
   login [--email <address>]          Sign up or sign in with an emailed code; saves an API key
   logout                             Forget the saved key
-  account | usage | entitlements     Your account, this period's usage, your plan's limits
+  account | usage | entitlements     Your account, usage and wallet balance, your limits
   keys [list | create <name> | revoke <key_id>]
-  billing [checkout | portal]        Stripe links to subscribe or manage billing
+  billing checkout [--amount <usd>]  Sign up: add a card and fund your prepaid wallet ($5 minimum)
+  billing top-up [--amount <usd>]    Add credits to your wallet (default $10, $5 minimum)
+  billing portal                     Your saved card and payment receipts
 
 Media
   upload <file> [--name <name>]      Upload a file straight to storage and add it to your library
@@ -113,7 +115,7 @@ async function login(args: Args) {
     mode: 0o600,
   });
   say(`Signed in. Key saved to ${path}.`);
-  if (done.checkout_url) say(`No plan yet: subscribe at ${done.checkout_url}`);
+  if (done.checkout_url) say(`Add a card and fund your wallet ($5 minimum): ${done.checkout_url}`);
   const { api_key: _secret, ...rest } = done;
   print(rest);
 }
@@ -161,8 +163,12 @@ async function run(argv: string[]) {
       return fail(`unknown keys action ${action}`);
     }
     case "billing": {
-      const [action = "checkout"] = rest;
-      if (action === "checkout") return print(await client().billingCheckout());
+      const [action = "top-up"] = rest;
+      const amount = flag(args, "amount");
+      const money = amount === undefined ? {} : { amount_usd: Number(amount) };
+      if (amount !== undefined && !(Number(amount) > 0)) fail("--amount must be a dollar amount, such as 5 or 12.50");
+      if (action === "checkout") return print(await client().billingCheckout(money));
+      if (action === "top-up" || action === "topup") return print(await client().billingTopUp(money));
       if (action === "portal") return print(await client().billingPortal());
       return fail(`unknown billing action ${action}`);
     }

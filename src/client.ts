@@ -4,7 +4,7 @@
 // Every method maps to one public operation (the same names as the MCP
 // tools). JSON in and out is snake_case, as the API sends it. Errors are
 // thrown as VidJutsuError with the API's {code, message} and, for 402s, the
-// link that fixes them (checkout_url or portal_url).
+// link that fixes them (checkout_url, top_up_url or portal_url).
 
 export const DEFAULT_BASE_URL = "https://api.vidjutsu.ai";
 /** The API version this client was written against (Stripe-style dates). */
@@ -37,7 +37,7 @@ export class VidJutsuError extends Error {
   }
   /** The Stripe link that fixes a 402, when the API sent one. */
   get fixUrl(): string | undefined {
-    const url = this.body.checkout_url ?? this.body.portal_url;
+    const url = this.body.checkout_url ?? this.body.top_up_url ?? this.body.portal_url;
     return typeof url === "string" ? url : undefined;
   }
 }
@@ -155,8 +155,13 @@ export class VidJutsu {
   revokeKey(keyId: string) {
     return this.request("DELETE", `/keys/${seg(keyId)}`);
   }
-  billingCheckout(options: { success_url?: string; cancel_url?: string } = {}) {
+  /** Sign up for the prepaid wallet: a card and a first payment (amount_usd, default 5, at least 5). */
+  billingCheckout(options: { amount_usd?: number; success_url?: string; cancel_url?: string } = {}) {
     return this.request<{ url: string } & JsonObject>("POST", "/billing/checkout", options);
+  }
+  /** Add credits to the wallet any time (amount_usd, default 10, at least 5). */
+  billingTopUp(options: { amount_usd?: number; success_url?: string; cancel_url?: string } = {}) {
+    return this.request<{ url: string } & JsonObject>("POST", "/billing/top-up", options);
   }
   billingPortal(options: { return_url?: string } = {}) {
     return this.request<{ url: string } & JsonObject>("POST", "/billing/portal", options);
