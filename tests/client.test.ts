@@ -197,4 +197,22 @@ describe("VidJutsu", () => {
     expect(result.file).toBe("WEBVTT\n");
     expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/projects/film/captions?format=vtt");
   });
+
+  test("frame, check and import_timeline send the bodies the API takes", async () => {
+    const { calls, fetcher } = fake((call) =>
+      call.url.endsWith("/imports") ? json({ project: "film", clips: 3 }, 201) : json({ job_id: "j1", state: "queued" }, 202),
+    );
+    const api = new VidJutsu({ fetch: fetcher });
+    await api.frame("film", ["12.5", 40], { height: 1080 });
+    await api.check("film", { sections: [{ name: "Intro", from: 0, to: 30 }] });
+    await api.importTimeline({ project: "film", timeline: "TITLE: x", format: "edl", files: [{ name: "a.wav", media: "h1", audio: "h1" }] });
+    expect(calls.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "POST https://api.vidjutsu.ai/projects/film/frames",
+      "POST https://api.vidjutsu.ai/projects/film/checks",
+      "POST https://api.vidjutsu.ai/imports",
+    ]);
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ times: ["12.5", 40], height: 1080 });
+    expect(JSON.parse(calls[1]!.body as string)).toEqual({ sections: [{ name: "Intro", from: 0, to: 30 }] });
+    expect(JSON.parse(calls[2]!.body as string).files[0].media).toBe("h1");
+  });
 });

@@ -56,6 +56,14 @@ Layouts and sound
   studio-sound <project> [--media <id,id>] [--no-wait] Clean every voice (billed by box time)
   level <project> --tracks <a1,a2> [--target <lufs>] [--dry-run]
 
+Look and check
+  frame <project> <t...> [--height 360|720|1080] [--revision <r>] [--no-wait]
+                                     Stills of the cut at timeline times, as the render draws them
+  check <project> [--sections <file.json>] [--revision <r>] [--no-wait]
+                                     Measure gaps, black, silence, loudness and gains
+  import <project> <timeline.fcpxml|.edl> --files <ingested.json> [--format fcpxml|edl]
+                                     Open a Descript timeline export as a new project (free)
+
 Working together
   events <project> [--after <seq>] [--follow]     Change notices; --follow streams them live
   comments <project>                 The comments on a project
@@ -233,6 +241,20 @@ async function jobThenRead(args: Args, start: () => Promise<StartedJob>, read: (
   return print(await read());
 }
 
+/** Start a job, wait for it unless --no-wait, then print what it made (its output). */
+async function jobOutput(args: Args, start: () => Promise<StartedJob>) {
+  const api = client();
+  const started = await start();
+  if (!started.job_id || args.flags["no-wait"]) return print(started);
+  say(`Working (job ${started.job_id})...`);
+  const job = await api.waitForJob(started.job_id);
+  if (job.state !== "succeeded") {
+    print(job);
+    process.exit(1);
+  }
+  return print((job.output ?? job) as Json);
+}
+
 async function readOperations(source: string): Promise<JsonObject> {
   const text = source === "-" ? readFileSync(0, "utf8") : readFileSync(source, "utf8");
   const parsed = JSON.parse(text);
@@ -405,6 +427,36 @@ async function run(argv: string[]) {
       const project = need(rest[0], "project");
       const api = client();
       return jobThenRead(args, () => api.studioSound(project, { media: list(args, "media") }), () => api.show(project));
+    }
+    case "frame": {
+      const project = need(rest[0], "project");
+      const times = rest.slice(1).map((value) => time(value, "each time") as Json);
+      if (times.length === 0) fail("give at least one timeline time, e.g. vidjutsu frame film 12.5 40");
+      const height = int(args, "height");
+      if (height !== undefined && ![360, 720, 1080].includes(height)) fail("--height must be 360, 720 or 1080");
+      const api = client();
+      return jobOutput(args, () =>
+        api.frame(project, times, { height: height as 360 | 720 | 1080 | undefined, revision: flag(args, "revision") }),
+      );
+    }
+    case "check": {
+      const project = need(rest[0], "project");
+      const file = flag(args, "sections");
+      const sections = file ? JSON.parse(readFileSync(file, "utf8")) : undefined;
+      const api = client();
+      return jobOutput(args, () => api.check(project, { sections, revision: flag(args, "revision") }));
+    }
+    case "import": {
+      const project = need(rest[0], "project");
+      const timeline = readFileSync(need(rest[1], "timeline file (a Descript FCPXML or EDL export)"), "utf8");
+      const filesPath = need(flag(args, "files"), "--files (a JSON list of ingest results: {name, media, audio})");
+      const files = JSON.parse(readFileSync(filesPath, "utf8"));
+      if (!Array.isArray(files)) fail("--files must be a JSON list of ingest results");
+      const format = flag(args, "format");
+      if (format !== undefined && format !== "fcpxml" && format !== "edl") fail("--format must be fcpxml or edl");
+      return print(
+        await client().importTimeline({ project, timeline, files, format: format as "fcpxml" | "edl" | undefined }),
+      );
     }
     case "quote":
       return print(await client().quote(need(rest[0], "project"), { media: list(args, "media") }));

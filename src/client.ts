@@ -462,6 +462,47 @@ export class VidJutsu {
     return this.request("GET", `/projects/${seg(project)}/quote${query({ media: options.media?.join(",") })}`);
   }
 
+  // ---- Look at and check a cut ----
+
+  /**
+   * Stills of the timeline at 1 to 24 timeline times (seconds like 12.5 or
+   * fractions like "1001/30000"), drawn by the renderer, so they show exactly
+   * what a render shows. Starts a job; when it succeeds, `output.frames` has
+   * one still per time with a one-day JPEG `url`. Billed by box time.
+   */
+  frame(
+    project: string,
+    times: Json[],
+    options: { height?: 360 | 720 | 1080; branch?: string; revision?: string } = {},
+    idempotencyKey?: string,
+  ) {
+    return this.request<StartedJob>("POST", `/projects/${seg(project)}/frames`, { times, ...options }, idempotencyKey);
+  }
+  /**
+   * Measure the cut: gaps, stretches with no sound, black picture, silence,
+   * loudness of the mix and of each section, and each audio clip's gain.
+   * Measured values only, never a score. Starts a job; its `output` holds
+   * the measurements. Billed by box time.
+   */
+  check(
+    project: string,
+    options: { sections?: { name?: string; from: Json; to: Json }[]; branch?: string; revision?: string } = {},
+    idempotencyKey?: string,
+  ) {
+    return this.request<StartedJob>("POST", `/projects/${seg(project)}/checks`, options, idempotencyKey);
+  }
+  /**
+   * Open a Descript timeline export (FCPXML or EDL text) as a new project.
+   * Ingest every file the export names first and pass each ingest result
+   * ({name, media, audio}) in `files`. Free, and done at once.
+   */
+  importTimeline(
+    body: { project: string; timeline: string; format?: "fcpxml" | "edl"; files: JsonObject[] },
+    idempotencyKey?: string,
+  ) {
+    return this.request("POST", "/imports", body, idempotencyKey);
+  }
+
   // ---- Renders ----
 
   /**
@@ -485,7 +526,7 @@ export class VidJutsu {
   cancelRender(jobId: string) {
     return this.request<RenderJob>("POST", `/jobs/${seg(jobId)}/cancel`);
   }
-  /** Poll a job (render, preview, transcript or Studio Sound) until it ends. */
+  /** Poll a job (render, preview, transcript, Studio Sound, frame or check) until it ends. */
   waitForJob(jobId: string, options: { intervalMs?: number; onUpdate?: (job: RenderJob) => void } = {}) {
     return this.waitForRender(jobId, options);
   }
