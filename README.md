@@ -110,6 +110,7 @@ carries `fixUrl`, the Stripe link that fixes it (sign-up or top-up).
 
 ## Release
 
-Bump `package.json` and `src/cli/version.ts` together, merge, then push the tag
-`v<version>`. The tag publishes to npm (trusted publishing) and attaches the
-standalone binaries to a GitHub release.
+Bump `package.json` and `src/cli/version.ts` together and merge. When main has a
+version with no tag, CI runs the checks and tests, pushes the tag `v<version>`,
+publishes to npm (trusted publishing) and attaches the standalone binaries to a
+GitHub release.

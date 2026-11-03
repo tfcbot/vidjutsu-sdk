@@ -1,0 +1,66 @@
+name: Tag Release
+
+# A push to main whose package.json version has no tag yet releases that version.
+# Tags pushed with GITHUB_TOKEN don't start tag-triggered workflows, so this
+# dispatches Publish to npm and Release CLI on the new tag itself.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the release tag
+        id: version
+        run: |
+          TAG="v$(jq -r .version package.json)"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+            echo "$TAG already exists, nothing to release"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: oven-sh/setup-bun@v2
+        if: steps.version.outputs.exists == 'false'
+        with:
+          bun-version: '1.3.10'
+
+      - if: steps.version.outputs.exists == 'false'
+        run: bun install
+
+      - if: steps.version.outputs.exists == 'false'
+        run: bun run check:release
+
+      - if: steps.version.outputs.exists == 'false'
+        run: bun test
+
+      - name: Push the tag
+        if: steps.version.outputs.exists == 'false'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git tag "$TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$TAG"
+
+      - name: Start the release workflows
+        if: steps.version.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          gh workflow run publish.yml --ref "$TAG"
+          gh workflow run release.yml --ref "$TAG"
