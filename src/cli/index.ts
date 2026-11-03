@@ -67,6 +67,8 @@ Working together
 Prices and renders
   quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
   render <project> [--json <body>] [--no-wait] [--out <file>]
+         [--captions] [--captions-position top] [--captions-size small|large] [--captions-background none]
+  captions <project> [--format srt|vtt] [--revision <r>] [--out <file>]   The cut's captions (free)
   status <job_id> | cancel <job_id>
   download <job_id> [--out <file>]   Save a finished render
 
@@ -94,7 +96,7 @@ function parse(argv: string[]): Args {
   }
   return { positional, flags };
 }
-const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run"]);
+const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run", "captions"]);
 
 function configPath(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
@@ -197,6 +199,23 @@ function range(args: Args): JsonObject | undefined {
   if (start === undefined && end === undefined) return undefined;
   if (start === undefined || end === undefined) fail("give both --from and --to");
   return { start, end };
+}
+
+/** --captions and its options, as the render body's captions object. */
+function captionsOption(args: Args): JsonObject | undefined {
+  const position = flag(args, "captions-position");
+  const size = flag(args, "captions-size");
+  const background = flag(args, "captions-background");
+  if (!args.flags.captions && position === undefined && size === undefined && background === undefined) return undefined;
+  if (position !== undefined && position !== "bottom" && position !== "top") fail("--captions-position must be bottom or top");
+  if (size !== undefined && !["small", "medium", "large"].includes(size)) fail("--captions-size must be small, medium or large");
+  if (background !== undefined && background !== "solid" && background !== "none") fail("--captions-background must be solid or none");
+  return {
+    on: true,
+    ...(position ? { position } : {}),
+    ...(size ? { size } : {}),
+    ...(background ? { background } : {}),
+  };
 }
 
 /** Start a job (or find it already done), wait for it unless --no-wait, then read the result. */
@@ -455,6 +474,8 @@ async function run(argv: string[]) {
       const api = client();
       const project = need(rest[0], "project");
       const body = flag(args, "json") ? (JSON.parse(flag(args, "json")!) as JsonObject) : {};
+      const captions = captionsOption(args);
+      if (captions) body.captions = captions;
       let job = await api.render(project, body, `render-${project}-${Date.now()}`);
       if (!args.flags["no-wait"]) {
         say(`Rendering (job ${job.job_id})...`);
@@ -470,6 +491,19 @@ async function run(argv: string[]) {
       print(job);
       if (job.state === "failed") process.exit(1);
       return;
+    }
+    case "captions": {
+      const project = need(rest[0], "project");
+      const format = flag(args, "format");
+      if (format !== undefined && format !== "srt" && format !== "vtt") fail("--format must be srt or vtt");
+      const result = await client().captions(project, {
+        format: format as "srt" | "vtt" | undefined,
+        revision: flag(args, "revision"),
+      });
+      const out = flag(args, "out");
+      if (!out) return process.stdout.write(String(result.file ?? ""));
+      writeFileSync(out, String(result.file ?? ""));
+      return say(`Saved ${out}`);
     }
     case "status":
       return print(await client().renderStatus(need(rest[0], "job id")));

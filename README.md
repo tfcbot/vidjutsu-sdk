@@ -51,6 +51,8 @@ vidjutsu layout film circle_corner       # screen and camera with a preset
 vidjutsu quote film                      # what a render or Studio Sound would cost
 vidjutsu studio-sound film               # clean every voice ($0.10 a voice minute)
 vidjutsu events film --follow            # live change notices
+vidjutsu render film --captions --out film.mp4  # captions burned in, no extra charge
+vidjutsu captions film --format vtt --out film.vtt
 ```
 
 ## Agents (MCP)
@@ -68,7 +70,7 @@ REST operations, and the SDK has one method for each:
 | Layouts | `layouts`, `save_layout`, `delete_layout`, `apply_layout` |
 | Sound | `studio_sound` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
-| Renders and prices | `quote`, `render`, `render_status`, `cancel_render` |
+| Renders and prices | `quote`, `render` (with burned-in `captions`), `captions` (SRT or WebVTT), `render_status`, `cancel_render` |
 | Account | `account`, `create_account`, `usage`, `wallet`, `entitlements`, `create_key`, `list_keys`, `revoke_key`, `billing_checkout`, `billing_top_up`, `billing_auto_top_up`, `billing_portal` |
 
 ## SDK
