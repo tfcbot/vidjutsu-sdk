@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/tfcbot/vidjutsu-sdk/main/install.sh
 
 ```sh
 vidjutsu login                 # email, then the code we send you; saves an API key
-vidjutsu billing checkout      # Pro: $25 a month plus usage (Stripe Checkout link)
+vidjutsu billing checkout      # add a card and fund your prepaid wallet ($5 minimum)
 
 vidjutsu upload take1.mp4      # straight to storage; prints the media item
 vidjutsu init film
@@ -29,6 +29,9 @@ vidjutsu render film --out film.mp4
 "expected_head": "<revision>"}` so a retry can't apply twice. Every command
 prints the API's JSON. `vidjutsu --help` lists them all.
 
+Usage is paid from a prepaid wallet: no monthly fee. Add credits any time with
+`vidjutsu billing top-up --amount 20`; `vidjutsu usage` shows the balance.
+
 Set `VIDJUTSU_API_KEY` to use a key without `login`. Keys live in
 `~/.config/vidjutsu/cloud.json` (mode 600).
 
@@ -38,7 +41,7 @@ Point any MCP client at `https://api.vidjutsu.ai/mcp`. It signs in with OAuth,
 or send `Authorization: Bearer <api key>`. The tools have the same names as the
 REST operations: `ingest`, `create_upload`, `complete_upload`, `init`, `show`,
 `edit`, `render`, `render_status`, `cancel_render`, `media_url`, `account`,
-`usage`, `billing_checkout` and more.
+`usage`, `billing_checkout`, `billing_top_up` and more.
 
 ## SDK
 
@@ -58,7 +61,7 @@ The API is versioned by date, like Stripe: every request carries
 against (`API_VERSION`); pass `apiVersion` to pin another.
 
 Errors are `VidJutsuError` with the API's `code` and `message`. A 402 also
-carries `fixUrl`, the Stripe link that fixes it.
+carries `fixUrl`, the Stripe link that fixes it (sign-up or top-up).
 
 ## Release
 

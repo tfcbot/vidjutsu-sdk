@@ -51,6 +51,19 @@ describe("VidJutsu", () => {
     expect(calls[0]!.headers["VidJutsu-Version"]).toBe("2027-01-01");
   });
 
+  test("a top-up sends its amount, and a 402 for credits points at the top-up link", async () => {
+    const { calls, fetcher } = fake((call) =>
+      call.url.endsWith("/billing/top-up")
+        ? json({ url: "https://checkout.stripe.com/t" })
+        : json({ code: "payment_required", message: "add credits", top_up_url: "https://checkout.stripe.com/t" }, 402),
+    );
+    const api = new VidJutsu({ apiKey: "k", fetch: fetcher });
+    expect((await api.billingTopUp({ amount_usd: 20 })).url).toBe("https://checkout.stripe.com/t");
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ amount_usd: 20 });
+    const error = await api.render("film").catch((e) => e);
+    expect(error.fixUrl).toBe("https://checkout.stripe.com/t");
+  });
+
   test("path parameters are escaped", async () => {
     const { calls, fetcher } = fake(() => json({}));
     await new VidJutsu({ fetch: fetcher }).show("a/b");
