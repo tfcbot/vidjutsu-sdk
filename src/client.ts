@@ -349,6 +349,25 @@ export class VidJutsu {
       idempotencyKey,
     );
   }
+  /**
+   * Bring an episode plan (episode.json, schemaVersion 2) in as the shot list:
+   * each group a scene, each beat a shot. `replace` removes every scene first.
+   * A stale expected_revision is a 409 (stale_revision).
+   */
+  shotListImport(
+    project: string,
+    expectedRevision: number,
+    episode: JsonObject,
+    options: { replace?: boolean } = {},
+    idempotencyKey?: string,
+  ) {
+    return this.request(
+      "POST",
+      `/projects/${seg(project)}/shot-list/import`,
+      { expected_revision: expectedRevision, episode, ...options },
+      idempotencyKey,
+    );
+  }
   /** Every file in the project: its scene, shot, place on the timeline and source. */
   files(project: string) {
     return this.request("GET", `/projects/${seg(project)}/files`);
