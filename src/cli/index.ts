@@ -7,7 +7,7 @@ import { basename, dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type JsonObject } from "../client";
+import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type Json, type JsonObject, type StartedJob } from "../client";
 import { VERSION } from "./version";
 
 const HELP = `vidjutsu ${VERSION}: video editing for agents, in the cloud.
@@ -16,25 +16,63 @@ Account
   login [--email <address>]          Sign up or sign in with an emailed code; saves an API key
   logout                             Forget the saved key
   account | usage | entitlements     Your account, usage and wallet balance, your limits
+  wallet                             Wallet balance, card on file, auto top-up and this period's spend
   keys [list | create <name> | revoke <key_id>]
   billing checkout [--amount <usd>]  Sign up: add a card and fund your prepaid wallet ($5 minimum)
   billing top-up [--amount <usd>]    Add credits to your wallet (default $10, $5 minimum)
+  billing auto-top-up --on|--off [--threshold <usd>] [--amount <usd>]
   billing portal                     Your saved card and payment receipts
 
 Media
-  upload <file> [--name <name>]      Upload a file straight to storage and add it to your library
-  ingest <https-url> [--name <name>] Add media from a link
+  upload <file> [--name <name>] [--project <p>]   Upload a file straight to storage
+  ingest <https-url> [--name <name>] [--project <p>]
   url <hash> [--ttl <seconds>]       A time-limited download link
+  preview <hash> [--project <p>] [--no-wait]      Make (or read) its proxy, filmstrip and waveform
+  transcript <hash> [--project <p>] [--no-wait]   Make (or read) its transcript
 
-Projects and renders
+Projects
+  projects [--limit <n>] [--cursor <c>]           Your projects, most recently changed first
   init <project>                     Create a project
-  show <project>                     Its current timeline
-  edit <project> <ops.json | ->      Apply edit operations ([...] or {operations, expected_head})
+  show <project> [--revision <r>]    Its timeline, and who is in it right now
+  head <project>                     Its head revision, without the timeline
+  edit <project> <ops.json | -> [--summary <line>]
+                                     Apply edit operations ([...] or {operations, expected_head})
+  words <project> [--pause <seconds>]             The words on the edited timeline, and the pauses
+  search <project> <words...> [--limit <n>]       Find spoken words in every file of the project
+  files <project>                    Every file in the project, where it is used and where it came from
+
+History
+  history <project> [--limit <n>] [--before <next>]
+  undo <project> <revision> [--change <index>] [--expected-head <r>]
+  restore <project> <revision> [--expected-head <r>]
+
+Shot list
+  shot-list <project>                The scenes, shots and the files filed under each
+  shot-list edit <project> <ops.json | -> [--expected-revision <n>]
+
+Layouts and sound
+  layouts [list | save <file.json> | delete <layout_id>]
+  layout <project> <preset> [--from <t>] [--to <t>]   Lay out screen and camera with a preset
+  studio-sound <project> [--media <id,id>] [--no-wait] Clean every voice ($0.10 a voice minute)
+  level <project> --tracks <a1,a2> [--target <lufs>] [--dry-run]
+
+Working together
+  events <project> [--after <seq>] [--follow]     Change notices; --follow streams them live
+  comments <project>                 The comments on a project
+  comment <project> <text> [--at <t> | --from <t> --to <t>] [--reply-to <id>] [--quote <words>]
+  comments resolve|reopen|delete <project> <comment_id>
+  working-on <project> <text | --clear> [--clips <id,id>] [--from <t> --to <t>] [--scene <id>]
+  presence <project> [--playhead <t>] [--from <t> --to <t>] [--clear]
+
+Prices and renders
+  quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
   render <project> [--json <body>] [--no-wait] [--out <file>]
   status <job_id> | cancel <job_id>
   download <job_id> [--out <file>]   Save a finished render
 
-Environment: VIDJUTSU_API_KEY (else the saved key), VIDJUTSU_API_URL (default ${DEFAULT_BASE_URL}).
+Times are seconds (12, 12.5) or fractions (1001/30000).
+Environment: VIDJUTSU_API_KEY (else the saved key), VIDJUTSU_API_URL (default ${DEFAULT_BASE_URL}),
+VIDJUTSU_CLIENT (the name history and Activity show for you, e.g. "Claude Code").
 MCP: point your agent at ${DEFAULT_BASE_URL}/mcp.`;
 
 type Args = { positional: string[]; flags: Record<string, string | true> };
@@ -56,7 +94,7 @@ function parse(argv: string[]): Args {
   }
   return { positional, flags };
 }
-const BOOLEAN = new Set(["no-wait", "help", "version"]);
+const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run"]);
 
 function configPath(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
@@ -72,7 +110,11 @@ function savedKey(): string | undefined {
 function client(needKey = true): VidJutsu {
   const apiKey = process.env.VIDJUTSU_API_KEY || savedKey();
   if (needKey && !apiKey) fail("not signed in: run `vidjutsu login`, or set VIDJUTSU_API_KEY");
-  return new VidJutsu({ apiKey, baseUrl: process.env.VIDJUTSU_API_URL || DEFAULT_BASE_URL });
+  return new VidJutsu({
+    apiKey,
+    baseUrl: process.env.VIDJUTSU_API_URL || DEFAULT_BASE_URL,
+    clientName: process.env.VIDJUTSU_CLIENT || undefined,
+  });
 }
 
 function print(value: unknown) {
@@ -132,6 +174,46 @@ async function download(job: JsonObject, out?: string) {
   return file;
 }
 
+function int(args: Args, name: string): number | undefined {
+  const value = flag(args, name);
+  if (value === undefined) return undefined;
+  if (!/^\d+$/.test(value)) fail(`--${name} must be a whole number`);
+  return Number(value);
+}
+function list(args: Args, name: string): string[] | undefined {
+  const value = flag(args, name);
+  return value === undefined ? undefined : value.split(",").map((item) => item.trim()).filter(Boolean);
+}
+/** A time as the API takes it: a decimal becomes an exact string ("12.5"), a whole number stays a number. */
+function time(value: string | undefined, what: string): Json | undefined {
+  if (value === undefined) return undefined;
+  if (/^\d+$/.test(value)) return Number(value);
+  if (/^\d+(\.\d+)?$|^\d+\/\d+$/.test(value)) return value;
+  fail(`${what} must be seconds (12, 12.5) or a fraction (1001/30000)`);
+}
+function range(args: Args): JsonObject | undefined {
+  const start = time(flag(args, "from"), "--from");
+  const end = time(flag(args, "to"), "--to");
+  if (start === undefined && end === undefined) return undefined;
+  if (start === undefined || end === undefined) fail("give both --from and --to");
+  return { start, end };
+}
+
+/** Start a job (or find it already done), wait for it unless --no-wait, then read the result. */
+async function jobThenRead(args: Args, start: () => Promise<StartedJob>, read: () => Promise<JsonObject>) {
+  const api = client();
+  const started = await start();
+  if (started.job_id && started.started !== false && !args.flags["no-wait"]) {
+    say(`Working (job ${started.job_id})...`);
+    const job = await api.waitForJob(started.job_id);
+    if (job.state !== "succeeded") {
+      print(job);
+      process.exit(1);
+    }
+  } else if (args.flags["no-wait"]) return print(started);
+  return print(await read());
+}
+
 async function readOperations(source: string): Promise<JsonObject> {
   const text = source === "-" ? readFileSync(0, "utf8") : readFileSync(source, "utf8");
   const parsed = JSON.parse(text);
@@ -155,6 +237,8 @@ async function run(argv: string[]) {
       return print(await client().usage());
     case "entitlements":
       return print(await client().entitlements());
+    case "wallet":
+      return print(await client().wallet());
     case "keys": {
       const [action = "list", value] = rest;
       if (action === "list") return print(await client().listKeys());
@@ -170,29 +254,202 @@ async function run(argv: string[]) {
       if (action === "checkout") return print(await client().billingCheckout(money));
       if (action === "top-up" || action === "topup") return print(await client().billingTopUp(money));
       if (action === "portal") return print(await client().billingPortal());
+      if (action === "auto-top-up") {
+        if (!args.flags.on === !args.flags.off) fail("say --on or --off");
+        const threshold = flag(args, "threshold");
+        return print(
+          await client().billingAutoTopUp({
+            enabled: !!args.flags.on,
+            ...(threshold !== undefined ? { threshold_usd: threshold } : {}),
+            ...(amount !== undefined ? { amount_usd: amount } : {}),
+          }),
+        );
+      }
       return fail(`unknown billing action ${action}`);
     }
     case "upload": {
       const file = need(rest[0], "file");
       const name = flag(args, "name") ?? basename(file);
       say(`Uploading ${file}...`);
-      return print(await client().upload(name, new Uint8Array(readFileSync(file))));
+      return print(await client().upload(name, new Uint8Array(readFileSync(file)), { project: flag(args, "project") }));
     }
     case "ingest":
-      return print(await client().ingestUrl(need(rest[0], "https URL"), flag(args, "name")));
+      return print(
+        await client().ingestUrl(need(rest[0], "https URL"), flag(args, "name"), undefined, { project: flag(args, "project") }),
+      );
     case "url": {
       const ttl = flag(args, "ttl");
       return print(await client().mediaUrl(need(rest[0], "hash"), ttl ? Number(ttl) : undefined));
     }
+    case "preview": {
+      const hash = need(rest[0], "hash");
+      const api = client();
+      return jobThenRead(args, () => api.makePreview(hash, { project: flag(args, "project") }), () => api.mediaPreview(hash));
+    }
+    case "transcript": {
+      const hash = need(rest[0], "hash");
+      const api = client();
+      return jobThenRead(
+        args,
+        () => api.makeTranscript(hash, { project: flag(args, "project") }),
+        () => api.mediaTranscript(hash),
+      );
+    }
+    case "projects":
+      return print(await client().listProjects({ cursor: flag(args, "cursor"), limit: int(args, "limit") }));
     case "init":
       return print(await client().init(need(rest[0], "project")));
     case "show":
-      return print(await client().show(need(rest[0], "project")));
+      return print(await client().show(need(rest[0], "project"), { revision: flag(args, "revision") }));
+    case "head":
+      return print(await client().head(need(rest[0], "project")));
     case "edit": {
       const project = need(rest[0], "project");
       const body = await readOperations(need(rest[1], "operations file (or - for stdin)"));
       const { operations, ...options } = body;
+      const summary = flag(args, "summary");
+      if (summary) options.summary = summary;
       return print(await client().edit(project, operations as JsonObject[], options as JsonObject));
+    }
+    case "level": {
+      const project = need(rest[0], "project");
+      const tracks = list(args, "tracks");
+      if (!tracks?.length) fail("missing --tracks (audio track ids, such as a1)");
+      const target = flag(args, "target");
+      return print(
+        await client().level(project, {
+          tracks,
+          ...(target !== undefined ? { target: Number(target) } : {}),
+          ...(args.flags["dry-run"] ? { dry_run: true } : {}),
+        }),
+      );
+    }
+    case "words":
+      return print(
+        await client().timelineWords(need(rest[0], "project"), { revision: flag(args, "revision"), pause: flag(args, "pause") }),
+      );
+    case "search": {
+      const project = need(rest[0], "project");
+      const words = rest.slice(1).join(" ");
+      return print(await client().searchWords(project, need(words, "words to find"), { limit: int(args, "limit") }));
+    }
+    case "files":
+      return print(await client().files(need(rest[0], "project")));
+    case "history":
+      return print(
+        await client().history(need(rest[0], "project"), { limit: int(args, "limit"), before: flag(args, "before") }),
+      );
+    case "undo":
+      return print(
+        await client().undo(need(rest[0], "project"), need(rest[1], "revision"), {
+          change: int(args, "change"),
+          expected_head: flag(args, "expected-head"),
+        }),
+      );
+    case "restore":
+      return print(
+        await client().restore(need(rest[0], "project"), need(rest[1], "revision"), {
+          expected_head: flag(args, "expected-head"),
+        }),
+      );
+    case "shot-list":
+    case "shotlist": {
+      if (rest[0] !== "edit") return print(await client().shotList(need(rest[0], "project")));
+      const api = client();
+      const project = need(rest[1], "project");
+      const body = await readOperations(need(rest[2], "operations file (or - for stdin)"));
+      let expected = int(args, "expected-revision") ?? (body.expected_revision as number | undefined);
+      if (expected === undefined) expected = Number((await api.shotList(project)).revision ?? 0);
+      return print(await api.shotListEdit(project, expected, body.operations as never));
+    }
+    case "layouts": {
+      const [action = "list", value] = rest;
+      if (action === "list") return print(await client().layouts());
+      if (action === "save") {
+        const preset = JSON.parse(readFileSync(need(value, "preset file (or - for stdin)") === "-" ? 0 : value!, "utf8"));
+        return print(await client().saveLayout(preset));
+      }
+      if (action === "delete") return print(await client().deleteLayout(need(value, "layout id")));
+      return fail(`unknown layouts action ${action}`);
+    }
+    case "layout": {
+      const project = need(rest[0], "project");
+      const preset = need(rest[1], "preset (an id or name from vidjutsu layouts)");
+      return print(
+        await client().applyLayout(project, preset, {
+          from: time(flag(args, "from"), "--from"),
+          to: time(flag(args, "to"), "--to"),
+        }),
+      );
+    }
+    case "studio-sound": {
+      const project = need(rest[0], "project");
+      const api = client();
+      return jobThenRead(args, () => api.studioSound(project, { media: list(args, "media") }), () => api.show(project));
+    }
+    case "quote":
+      return print(await client().quote(need(rest[0], "project"), { media: list(args, "media") }));
+    case "events": {
+      const project = need(rest[0], "project");
+      if (!args.flags.follow) {
+        return print(await client().events(project, { after: int(args, "after"), limit: int(args, "limit") }));
+      }
+      const after = flag(args, "after");
+      for await (const event of client().stream(project, { lastEventId: after })) {
+        process.stdout.write(`${JSON.stringify(event)}\n`);
+      }
+      return;
+    }
+    case "comments": {
+      const [first, project, commentId] = rest;
+      if (first === "resolve" || first === "reopen") {
+        return print(
+          await client().resolveComment(need(project, "project"), need(commentId, "comment id"), first === "resolve"),
+        );
+      }
+      if (first === "delete") return print(await client().deleteComment(need(project, "project"), need(commentId, "comment id")));
+      return print(await client().comments(need(first, "project")));
+    }
+    case "comment": {
+      const project = need(rest[0], "project");
+      const text = need(rest.slice(1).join(" "), "comment text");
+      const body: JsonObject = { text };
+      const replyTo = flag(args, "reply-to");
+      if (replyTo) body.reply_to = replyTo;
+      const at = time(flag(args, "at"), "--at");
+      if (at !== undefined) body.time = typeof at === "number" ? String(at) : at;
+      const span = range(args);
+      if (span) Object.assign(body, { start: String(span.start), end: String(span.end) });
+      const quote = flag(args, "quote");
+      if (quote) body.quote = quote;
+      if (!replyTo && at === undefined && !span) fail("say where: --at <t>, or --from <t> --to <t> (or --reply-to <id>)");
+      return print(await client().addComment(project, body as JsonObject & { text: string }));
+    }
+    case "working-on": {
+      const project = need(rest[0], "project");
+      if (args.flags.clear) return print(await client().workingOn(project, { text: null }));
+      const span = range(args);
+      return print(
+        await client().workingOn(project, {
+          text: need(rest.slice(1).join(" "), "what you are doing (or --clear)"),
+          ...(list(args, "clips") ? { clips: list(args, "clips") } : {}),
+          ...(span ? { range: span } : {}),
+          ...(flag(args, "scene") ? { scene: flag(args, "scene") } : {}),
+        }),
+      );
+    }
+    case "presence": {
+      const project = need(rest[0], "project");
+      if (args.flags.clear) return print(await client().setPresence(project, { selection: null, playhead: null }));
+      const playhead = time(flag(args, "playhead"), "--playhead");
+      const span = range(args);
+      if (playhead === undefined && !span) fail("give --playhead <t>, --from <t> --to <t>, or --clear");
+      return print(
+        await client().setPresence(project, {
+          ...(playhead !== undefined ? { playhead } : {}),
+          ...(span ? { selection: span } : {}),
+        }),
+      );
     }
     case "render": {
       const api = client();

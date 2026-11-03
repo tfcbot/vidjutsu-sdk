@@ -1,6 +1,6 @@
 {
   "name": "vidjutsu",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "VidJutsu Cloud: video editing for agents. SDK + CLI for api.vidjutsu.ai.",
   "type": "module",
   "main": "./dist/index.js",
