@@ -190,4 +190,11 @@ describe("VidJutsu", () => {
     expect(error).toBeInstanceOf(VidJutsuError);
     expect(error.code).toBe("not_found");
   });
+
+  test("captions reads the cut's captions in the chosen format", async () => {
+    const { calls, fetcher } = fake(() => json({ format: "vtt", name: "film.vtt", file: "WEBVTT\n" }));
+    const result = await new VidJutsu({ fetch: fetcher }).captions("film", { format: "vtt" });
+    expect(result.file).toBe("WEBVTT\n");
+    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/projects/film/captions?format=vtt");
+  });
 });

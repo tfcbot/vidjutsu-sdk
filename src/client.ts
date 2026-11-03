@@ -76,6 +76,14 @@ export interface ProjectEvent {
   data: Json;
 }
 
+/** Burned-in captions for a render. One clean style; no extra charge. */
+export type CaptionsOption = {
+  on?: boolean;
+  position?: "bottom" | "top";
+  size?: "small" | "medium" | "large";
+  background?: "solid" | "none";
+};
+
 /** A shot list edit operation, named by `op` (add_scene, add_shot, set_shot, attach_media and the rest). */
 export type ShotListOperation = JsonObject & { op: string };
 
@@ -455,6 +463,18 @@ export class VidJutsu {
   }
 
   // ---- Renders ----
+
+  /**
+   * The timeline's captions as SRT or WebVTT, from the words on its audio
+   * tracks, so they follow every cut. Free. Refused while any sound on the
+   * timeline has no transcript.
+   */
+  captions(project: string, options: { format?: "srt" | "vtt"; revision?: string; branch?: string } = {}) {
+    return this.request<JsonObject & { file: string; name: string; format: string }>(
+      "GET",
+      `/projects/${seg(project)}/captions${query(options)}`,
+    );
+  }
 
   render(project: string, body: JsonObject = {}, idempotencyKey?: string) {
     return this.request<RenderJob>("POST", `/projects/${seg(project)}/renders`, body, idempotencyKey);
