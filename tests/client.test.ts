@@ -122,4 +122,72 @@ describe("VidJutsu", () => {
     expect(job.state).toBe("succeeded");
     expect(calls).toHaveLength(3);
   });
+
+  test("reads send their options as query parameters, leaving out unset ones", async () => {
+    const { calls, fetcher } = fake(() => json({}));
+    const api = new VidJutsu({ fetch: fetcher });
+    await api.history("film", { limit: 5 });
+    await api.searchWords("film", "hello world", { limit: 3 });
+    await api.quote("film", { media: ["take1", "take2"] });
+    await api.listProjects();
+    await api.show("film", { revision: "r1" });
+    expect(calls.map((call) => call.url)).toEqual([
+      "https://api.vidjutsu.ai/projects/film/history?limit=5",
+      "https://api.vidjutsu.ai/projects/film/words?query=hello+world&limit=3",
+      "https://api.vidjutsu.ai/projects/film/quote?media=take1%2Ctake2",
+      "https://api.vidjutsu.ai/projects",
+      "https://api.vidjutsu.ai/projects/film?revision=r1",
+    ]);
+  });
+
+  test("undo, shot list edits and layouts send the bodies the API takes", async () => {
+    const { calls, fetcher } = fake(() => json({}));
+    const api = new VidJutsu({ fetch: fetcher, clientName: "Test Agent" });
+    await api.undo("film", "r9", { change: 2, expected_head: "r10" });
+    await api.shotListEdit("film", 3, [{ op: "add_scene", title: "Intro" }], "k2");
+    await api.applyLayout("film", "circle_corner", { from: "12.5", to: 30 });
+    await api.studioSound("film", { media: ["take1-audio"] });
+    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/projects/film/undo");
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ revision: "r9", change: 2, expected_head: "r10" });
+    expect(calls[0]!.headers["VidJutsu-Client"]).toBe("Test Agent");
+    expect(calls[1]!.url).toBe("https://api.vidjutsu.ai/projects/film/shot-list/edits");
+    expect(JSON.parse(calls[1]!.body as string)).toEqual({
+      expected_revision: 3,
+      operations: [{ op: "add_scene", title: "Intro" }],
+    });
+    expect(calls[1]!.headers["idempotency-key"]).toBe("k2");
+    expect(calls[2]!.url).toBe("https://api.vidjutsu.ai/projects/film/layout");
+    expect(JSON.parse(calls[2]!.body as string)).toEqual({ preset: "circle_corner", from: "12.5", to: 30 });
+    expect(calls[3]!.url).toBe("https://api.vidjutsu.ai/projects/film/studio-sound");
+  });
+
+  test("stream yields the project's events and resumes from the last notice", async () => {
+    const bodies = [
+      'event: ready\ndata: {"last_seq":4}\n\n: keep-alive\n\nid: 5\nevent: revision\ndata: {"seq":5,\ndata: "by":"Max"}\n\nretry: 1\n\n',
+      "event: presence\ndata: []\n\n",
+    ];
+    const { calls, fetcher } = fake(() => new Response(bodies.shift() ?? "", { headers: { "content-type": "text/event-stream" } }));
+    const api = new VidJutsu({ fetch: fetcher });
+    const seen = [];
+    for await (const event of api.stream("film")) {
+      seen.push(event);
+      if (seen.length === 3) break;
+    }
+    expect(seen).toEqual([
+      { event: "ready", data: { last_seq: 4 } },
+      { event: "revision", id: "5", data: { seq: 5, by: "Max" } },
+      { event: "presence", data: [] },
+    ]);
+    expect(calls[0]!.headers.accept).toBe("text/event-stream");
+    expect(calls[1]!.headers["last-event-id"]).toBe("5");
+  });
+
+  test("a refused stream throws the API's error", async () => {
+    const { fetcher } = fake(() => json({ code: "not_found", message: "No such project." }, 404));
+    const error = await (async () => {
+      for await (const _ of new VidJutsu({ fetch: fetcher }).stream("nope")) void _;
+    })().catch((e) => e);
+    expect(error).toBeInstanceOf(VidJutsuError);
+    expect(error.code).toBe("not_found");
+  });
 });
