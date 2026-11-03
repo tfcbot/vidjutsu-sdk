@@ -2,7 +2,7 @@
 
 The command line and TypeScript SDK for **VidJutsu Cloud**: video editing
 built for agents. Upload takes, edit a timeline with history, and render it on
-cloud machines through one API (`https://api.vidjutsu.ai/v3`) or MCP
+cloud machines through one API (`https://api.vidjutsu.ai`) or MCP
 (`https://api.vidjutsu.ai/mcp`).
 
 ## Install
@@ -52,6 +52,10 @@ const job = await api.render("film");
 const done = await api.waitForRender(job.job_id);
 console.log(done.output);
 ```
+
+The API is versioned by date, like Stripe: every request carries
+`VidJutsu-Version: <YYYY-MM-DD>`. The SDK sends the version it was built
+against (`API_VERSION`); pass `apiVersion` to pin another.
 
 Errors are `VidJutsuError` with the API's `code` and `message`. A 402 also
 carries `fixUrl`, the Stripe link that fixes it.

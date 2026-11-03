@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { sha256Hex, VidJutsu, VidJutsuError } from "../src/client";
+import { API_VERSION, sha256Hex, VidJutsu, VidJutsuError } from "../src/client";
 
 type Call = { url: string; method: string; headers: Record<string, string>; body?: unknown };
 
@@ -26,9 +26,10 @@ describe("VidJutsu", () => {
     const api = new VidJutsu({ apiKey: "vj_live_x", baseUrl: "https://api.test/", fetch: fetcher });
     const job = await api.render("film", { range_seconds: 10 }, "k1");
     expect(job.job_id).toBe("j1");
-    expect(calls[0]!.url).toBe("https://api.test/v3/projects/film/renders");
+    expect(calls[0]!.url).toBe("https://api.test/projects/film/renders");
     expect(calls[0]!.headers.authorization).toBe("Bearer vj_live_x");
     expect(calls[0]!.headers["idempotency-key"]).toBe("k1");
+    expect(calls[0]!.headers["VidJutsu-Version"]).toBe(API_VERSION);
     expect(JSON.parse(calls[0]!.body as string)).toEqual({ range_seconds: 10 });
   });
 
@@ -44,17 +45,23 @@ describe("VidJutsu", () => {
     expect(error.fixUrl).toBe("https://checkout.stripe.com/x");
   });
 
+  test("a pinned API version is sent instead of the default", async () => {
+    const { calls, fetcher } = fake(() => json({}));
+    await new VidJutsu({ fetch: fetcher, apiVersion: "2027-01-01" }).account();
+    expect(calls[0]!.headers["VidJutsu-Version"]).toBe("2027-01-01");
+  });
+
   test("path parameters are escaped", async () => {
     const { calls, fetcher } = fake(() => json({}));
     await new VidJutsu({ fetch: fetcher }).show("a/b");
-    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/v3/projects/a%2Fb");
+    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/projects/a%2Fb");
   });
 
   test("upload sends each part to its link and completes with the ETags", async () => {
     const data = new Uint8Array(10).map((_, i) => i);
     const hash = await sha256Hex(data);
     const { calls, fetcher } = fake((call) => {
-      if (call.url.endsWith("/v3/uploads")) {
+      if (call.url.endsWith("/uploads")) {
         return json({
           upload_id: "up_1",
           already_stored: false,
@@ -75,7 +82,7 @@ describe("VidJutsu", () => {
     expect(JSON.parse(calls[0]!.body as string)).toEqual({ name: "take1.mp4", bytes: 10, sha256: hash });
     expect((calls[1]!.body as Uint8Array).byteLength).toBe(6);
     expect((calls[2]!.body as Uint8Array).byteLength).toBe(4);
-    expect(calls[3]!.url).toBe("https://api.vidjutsu.ai/v3/uploads/up_1/complete");
+    expect(calls[3]!.url).toBe("https://api.vidjutsu.ai/uploads/up_1/complete");
     expect(JSON.parse(calls[3]!.body as string)).toEqual({
       parts: [
         { number: 1, etag: '"e-1"' },
@@ -86,7 +93,7 @@ describe("VidJutsu", () => {
 
   test("an already stored file completes with no parts", async () => {
     const { calls, fetcher } = fake((call) =>
-      call.url.endsWith("/v3/uploads")
+      call.url.endsWith("/uploads")
         ? json({ upload_id: "up_2", already_stored: true, part_size: 0, parts: [] })
         : json({ media: { id: "x" }, audio: null }),
     );

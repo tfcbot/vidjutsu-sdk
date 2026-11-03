@@ -1,4 +1,5 @@
-// VidJutsu Cloud client: the REST API at https://api.vidjutsu.ai/v3.
+// VidJutsu Cloud client: the REST API at https://api.vidjutsu.ai, versioned
+// by date in the VidJutsu-Version header.
 //
 // Every method maps to one public operation (the same names as the MCP
 // tools). JSON in and out is snake_case, as the API sends it. Errors are
@@ -6,6 +7,9 @@
 // link that fixes them (checkout_url or portal_url).
 
 export const DEFAULT_BASE_URL = "https://api.vidjutsu.ai";
+/** The API version this client was written against (Stripe-style dates). */
+export const API_VERSION = "2026-11-03";
+export const VERSION_HEADER = "VidJutsu-Version";
 
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type JsonObject = { [key: string]: Json };
@@ -17,6 +21,8 @@ export interface ClientOptions {
   baseUrl?: string;
   /** Defaults to the global fetch. */
   fetch?: typeof fetch;
+  /** Pin a different API version (YYYY-MM-DD). Defaults to API_VERSION. */
+  apiVersion?: string;
 }
 
 export class VidJutsuError extends Error {
@@ -62,11 +68,13 @@ export class VidJutsu {
   readonly baseUrl: string;
   private readonly apiKey?: string;
   private readonly fetcher: typeof fetch;
+  readonly apiVersion: string;
 
   constructor(options: ClientOptions = {}) {
     this.baseUrl = (options.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     this.apiKey = options.apiKey;
     this.fetcher = options.fetch ?? fetch;
+    this.apiVersion = options.apiVersion ?? API_VERSION;
   }
 
   /** One API call. `body` is sent as JSON; `idempotencyKey` makes writes safe to retry. */
@@ -76,7 +84,10 @@ export class VidJutsu {
     body?: unknown,
     idempotencyKey?: string,
   ): Promise<T> {
-    const headers: Record<string, string> = { accept: "application/json" };
+    const headers: Record<string, string> = {
+      accept: "application/json",
+      [VERSION_HEADER]: this.apiVersion,
+    };
     if (this.apiKey) headers.authorization = `Bearer ${this.apiKey}`;
     if (body !== undefined) headers["content-type"] = "application/json";
     if (idempotencyKey) headers["idempotency-key"] = idempotencyKey;
@@ -110,59 +121,59 @@ export class VidJutsu {
 
   /** Email a sign-in code. Returns {attempt} for `verify`. */
   signIn(email: string) {
-    return this.request<{ attempt: string } & JsonObject>("POST", "/v3/auth/email", { email });
+    return this.request<{ attempt: string } & JsonObject>("POST", "/auth/email", { email });
   }
   /** Check the emailed code. Returns {api_key, account_id, status, checkout_url?}. */
   verify(attempt: string, code: string) {
     return this.request<{ api_key: string; account_id: string; status: string } & JsonObject>(
       "POST",
-      "/v3/auth/verify",
+      "/auth/verify",
       { attempt, code },
     );
   }
   health() {
-    return this.request("GET", "/v3/health");
+    return this.request("GET", "/health");
   }
 
   // ---- Account ----
 
   account() {
-    return this.request("GET", "/v3/account");
+    return this.request("GET", "/account");
   }
   usage() {
-    return this.request("GET", "/v3/usage");
+    return this.request("GET", "/usage");
   }
   entitlements() {
-    return this.request("GET", "/v3/entitlements");
+    return this.request("GET", "/entitlements");
   }
   createKey(name: string) {
-    return this.request("POST", "/v3/keys", { name });
+    return this.request("POST", "/keys", { name });
   }
   listKeys() {
-    return this.request("GET", "/v3/keys");
+    return this.request("GET", "/keys");
   }
   revokeKey(keyId: string) {
-    return this.request("DELETE", `/v3/keys/${seg(keyId)}`);
+    return this.request("DELETE", `/keys/${seg(keyId)}`);
   }
   billingCheckout(options: { success_url?: string; cancel_url?: string } = {}) {
-    return this.request<{ url: string } & JsonObject>("POST", "/v3/billing/checkout", options);
+    return this.request<{ url: string } & JsonObject>("POST", "/billing/checkout", options);
   }
   billingPortal(options: { return_url?: string } = {}) {
-    return this.request<{ url: string } & JsonObject>("POST", "/v3/billing/portal", options);
+    return this.request<{ url: string } & JsonObject>("POST", "/billing/portal", options);
   }
 
   // ---- Media ----
 
   /** Add media from an https URL. */
   ingestUrl(url: string, name?: string, idempotencyKey?: string) {
-    return this.request<Ingested>("POST", "/v3/media", { url, name }, idempotencyKey);
+    return this.request<Ingested>("POST", "/media", { url, name }, idempotencyKey);
   }
   mediaInfo(hash: string) {
-    return this.request("GET", `/v3/media/${seg(hash)}`);
+    return this.request("GET", `/media/${seg(hash)}`);
   }
   mediaUrl(hash: string, ttlSeconds?: number) {
     const query = ttlSeconds ? `?ttl=${Math.floor(ttlSeconds)}` : "";
-    return this.request<{ url: string } & JsonObject>("GET", `/v3/media/${seg(hash)}/url${query}`);
+    return this.request<{ url: string } & JsonObject>("GET", `/media/${seg(hash)}/url${query}`);
   }
   createUpload(name: string, bytes: number, sha256: string, idempotencyKey?: string) {
     return this.request<{
@@ -170,13 +181,13 @@ export class VidJutsu {
       already_stored: boolean;
       part_size: number;
       parts: UploadPart[];
-    } & JsonObject>("POST", "/v3/uploads", { name, bytes, sha256 }, idempotencyKey);
+    } & JsonObject>("POST", "/uploads", { name, bytes, sha256 }, idempotencyKey);
   }
   completeUpload(uploadId: string, parts: { number: number; etag: string }[]) {
-    return this.request<Ingested>("POST", `/v3/uploads/${seg(uploadId)}/complete`, { parts });
+    return this.request<Ingested>("POST", `/uploads/${seg(uploadId)}/complete`, { parts });
   }
   abortUpload(uploadId: string) {
-    return this.request("DELETE", `/v3/uploads/${seg(uploadId)}`);
+    return this.request("DELETE", `/uploads/${seg(uploadId)}`);
   }
 
   /**
@@ -210,10 +221,10 @@ export class VidJutsu {
   // ---- Projects ----
 
   init(project: string, idempotencyKey?: string) {
-    return this.request("POST", "/v3/projects", { project, idempotency_key: idempotencyKey });
+    return this.request("POST", "/projects", { project, idempotency_key: idempotencyKey });
   }
   show(project: string) {
-    return this.request("GET", `/v3/projects/${seg(project)}`);
+    return this.request("GET", `/projects/${seg(project)}`);
   }
   /** Apply edit operations; send expected_head so a retry can't apply twice. */
   edit(
@@ -221,25 +232,25 @@ export class VidJutsu {
     operations: JsonObject[],
     options: { expected_head?: string; branch?: string; idempotency_key?: string } = {},
   ) {
-    return this.request("POST", `/v3/projects/${seg(project)}/edits`, { operations, ...options });
+    return this.request("POST", `/projects/${seg(project)}/edits`, { operations, ...options });
   }
   level(project: string, body: JsonObject) {
-    return this.request("POST", `/v3/projects/${seg(project)}/level`, body);
+    return this.request("POST", `/projects/${seg(project)}/level`, body);
   }
   cleanAudio(body: JsonObject) {
-    return this.request("POST", "/v3/audio/clean", body);
+    return this.request("POST", "/audio/clean", body);
   }
 
   // ---- Renders ----
 
   render(project: string, body: JsonObject = {}, idempotencyKey?: string) {
-    return this.request<RenderJob>("POST", `/v3/projects/${seg(project)}/renders`, body, idempotencyKey);
+    return this.request<RenderJob>("POST", `/projects/${seg(project)}/renders`, body, idempotencyKey);
   }
   renderStatus(jobId: string) {
-    return this.request<RenderJob>("GET", `/v3/jobs/${seg(jobId)}`);
+    return this.request<RenderJob>("GET", `/jobs/${seg(jobId)}`);
   }
   cancelRender(jobId: string) {
-    return this.request<RenderJob>("POST", `/v3/jobs/${seg(jobId)}/cancel`);
+    return this.request<RenderJob>("POST", `/jobs/${seg(jobId)}/cancel`);
   }
   /** Poll a render job until it ends. */
   async waitForRender(
