@@ -57,6 +57,7 @@ vidjutsu check film                      # gaps, black, silence, loudness and ga
 vidjutsu import film descript.fcpxml --files ingested.json  # open a Descript export
 vidjutsu render film --captions          # burn in captions (no extra charge)
 vidjutsu captions film --format vtt      # the captions as a WebVTT file
+vidjutsu bug "Render stuck at 90%" --project film --logs agent.log  # tell the VidJutsu team (free)
 ```
 
 ## Agents (MCP)
@@ -76,6 +77,7 @@ REST operations, and the SDK has one method for each:
 | Look and check | `frame`, `check` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
 | Renders and prices | `quote`, `render`, `render_status`, `cancel_render`, `captions` |
+| Bug reports | `report_bug` (only the VidJutsu team can read reports) |
 
 | Account | `account`, `create_account`, `usage`, `wallet`, `entitlements`, `create_key`, `list_keys`, `revoke_key`, `billing_checkout`, `billing_top_up`, `billing_auto_top_up`, `billing_portal` |
 

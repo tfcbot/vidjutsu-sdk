@@ -2,12 +2,12 @@
 // The `vidjutsu` command line for VidJutsu Cloud. Every command prints the
 // API's JSON on stdout; progress and prompts go to stderr.
 import { createWriteStream, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { arch, homedir, platform, release } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
-import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type Json, type JsonObject, type StartedJob } from "../client";
+import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type BugReport, type Json, type JsonObject, type StartedJob } from "../client";
 import { VERSION } from "./version";
 
 const HELP = `vidjutsu ${VERSION}: video editing for agents, in the cloud.
@@ -73,6 +73,10 @@ Working together
   comments resolve|reopen|delete <project> <comment_id>
   working-on <project> <text | --clear> [--clips <id,id>] [--from <t> --to <t>] [--scene <id>]
   presence <project> [--playhead <t>] [--from <t> --to <t>] [--clear]
+
+Bug reports
+  bug <summary...> [--details <text>] [--project <p>] [--logs <file>] [--screenshot <png|jpg>] [--sentry <event_id>]
+                                     Tell the VidJutsu team about a bug (free; only the team can read it)
 
 Prices and renders
   quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
@@ -413,6 +417,31 @@ async function run(argv: string[]) {
       let expected = int(args, "expected-revision") ?? (body.expected_revision as number | undefined);
       if (expected === undefined) expected = Number((await api.shotList(project)).revision ?? 0);
       return print(await api.shotListEdit(project, expected, body.operations as never));
+    }
+    case "bug": {
+      const summary = rest.join(" ").trim();
+      if (!summary) return fail("say what went wrong: vidjutsu bug \"Render stuck at 90%\"");
+      const logsFile = flag(args, "logs");
+      const shotFile = flag(args, "screenshot");
+      const details = flag(args, "details");
+      const project = flag(args, "project");
+      const sentry = flag(args, "sentry");
+      let screenshot: BugReport["screenshot"];
+      if (shotFile) {
+        const lower = shotFile.toLowerCase();
+        const type = lower.endsWith(".png") ? "image/png" : /\.jpe?g$/.test(lower) ? "image/jpeg" : null;
+        if (!type) return fail("--screenshot takes a .png or .jpg file");
+        screenshot = { data: readFileSync(shotFile).toString("base64"), content_type: type };
+      }
+      return print(await client().reportBug({
+        summary,
+        ...(details ? { details } : {}),
+        ...(project ? { project } : {}),
+        ...(logsFile ? { logs: readFileSync(logsFile === "-" ? 0 : logsFile, "utf8").slice(-64_000) } : {}),
+        ...(sentry ? { sentry_event_id: sentry } : {}),
+        ...(screenshot ? { screenshot } : {}),
+        app: { name: "vidjutsu-cli", version: VERSION, os: `${platform()} ${release()} ${arch()}` },
+      }));
     }
     case "layouts": {
       const [action = "list", value] = rest;
