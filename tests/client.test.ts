@@ -140,6 +140,18 @@ describe("VidJutsu", () => {
     ]);
   });
 
+  test("reportBug posts the report to /bug-reports", async () => {
+    const { calls, fetcher } = fake(() => json({ id: "bug_0123456789abcdef", created_at: 1, received: true }));
+    const api = new VidJutsu({ fetch: fetcher, clientName: "Test Agent" });
+    const sent = await api.reportBug({ summary: "Render stuck", project: "film", sentry_event_id: "a".repeat(32),
+      app: { name: "agent", version: "1" }, screenshot: { data: "iVBORw0KGgo=", content_type: "image/png" } });
+    expect(sent).toMatchObject({ id: "bug_0123456789abcdef", received: true });
+    expect(calls[0]!.url).toBe("https://api.vidjutsu.ai/bug-reports");
+    expect(calls[0]!.method).toBe("POST");
+    expect(JSON.parse(calls[0]!.body as string)).toEqual({ summary: "Render stuck", project: "film", sentry_event_id: "a".repeat(32),
+      app: { name: "agent", version: "1" }, screenshot: { data: "iVBORw0KGgo=", content_type: "image/png" } });
+  });
+
   test("undo, shot list edits and layouts send the bodies the API takes", async () => {
     const { calls, fetcher } = fake(() => json({}));
     const api = new VidJutsu({ fetch: fetcher, clientName: "Test Agent" });

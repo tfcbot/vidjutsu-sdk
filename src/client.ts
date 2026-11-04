@@ -7,6 +7,22 @@
 // link that fixes them (checkout_url, top_up_url or portal_url).
 
 export const DEFAULT_BASE_URL = "https://api.vidjutsu.ai";
+/** A bug report for reportBug. Only `summary` is required. */
+export type BugReport = {
+  /** What went wrong, in one line (up to 300 characters). */
+  summary: string;
+  /** Steps, what you expected and what happened (up to 10,000 characters). */
+  details?: string;
+  project?: string;
+  /** The tool sending it and its version. */
+  app?: { name?: string; version?: string; build?: string; os?: string };
+  /** Recent log lines; the last 64 KB are kept. */
+  logs?: string;
+  sentry_event_id?: string;
+  /** A PNG or JPEG of up to 2.5 MB, as base64. */
+  screenshot?: { data: string; content_type: "image/png" | "image/jpeg" };
+};
+
 /** The API version this client was written against (Stripe-style dates). */
 export const API_VERSION = "2026-11-03";
 export const VERSION_HEADER = "VidJutsu-Version";
@@ -445,6 +461,16 @@ export class VidJutsu {
   }
   deleteComment(project: string, commentId: string) {
     return this.request("DELETE", `/projects/${seg(project)}/comments/${seg(commentId)}`);
+  }
+
+  // ---- Bug reports ----
+
+  /**
+   * Tell the VidJutsu team about a bug. Only the team can read reports.
+   * Free, up to 20 an hour. Answers {id, created_at, received}.
+   */
+  reportBug(report: BugReport) {
+    return this.request("POST", "/bug-reports", report as JsonObject);
   }
 
   // ---- Screen and camera layouts ----
