@@ -173,6 +173,33 @@ describe("VidJutsu", () => {
     expect(calls[3]!.url).toBe("https://api.vidjutsu.ai/projects/film/studio-sound");
   });
 
+  test("templates, init template, get shot and shot list options call the template routes", async () => {
+    const { calls, fetcher } = fake(() => json({}));
+    const api = new VidJutsu({ fetch: fetcher });
+    await api.templates();
+    await api.saveTemplate({ name: "Short", columns: [{ id: "prompt", name: "Prompt", type: "long_text" }] });
+    await api.saveTemplate({ name: "From film", project: "film" });
+    await api.deleteTemplate("tpl 1");
+    await api.init("drama", { template: "ai_drama" });
+    await api.init("plain", "k1");
+    await api.shotList("drama", { scene: "sc_1", resolve: true });
+    await api.getShot("drama", "sh_1");
+    expect(calls.map((call) => `${call.method} ${call.url}`)).toEqual([
+      "GET https://api.vidjutsu.ai/shot-list-templates",
+      "POST https://api.vidjutsu.ai/shot-list-templates",
+      "POST https://api.vidjutsu.ai/shot-list-templates",
+      "DELETE https://api.vidjutsu.ai/shot-list-templates/tpl%201",
+      "POST https://api.vidjutsu.ai/projects",
+      "POST https://api.vidjutsu.ai/projects",
+      "GET https://api.vidjutsu.ai/projects/drama/shot-list?scene=sc_1&resolve=true",
+      "GET https://api.vidjutsu.ai/projects/drama/shot-list/shots/sh_1",
+    ]);
+    expect(JSON.parse(calls[1]!.body as string)).toEqual({ name: "Short", columns: [{ id: "prompt", name: "Prompt", type: "long_text" }] });
+    expect(JSON.parse(calls[2]!.body as string)).toEqual({ name: "From film", project: "film" });
+    expect(JSON.parse(calls[4]!.body as string)).toEqual({ project: "drama", template: "ai_drama" });
+    expect(JSON.parse(calls[5]!.body as string)).toEqual({ project: "plain", idempotency_key: "k1" });
+  });
+
   test("stream yields the project's events and resumes from the last notice", async () => {
     const bodies = [
       'event: ready\ndata: {"last_seq":4}\n\n: keep-alive\n\nid: 5\nevent: revision\ndata: {"seq":5,\ndata: "by":"Max"}\n\nretry: 1\n\n',
