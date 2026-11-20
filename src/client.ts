@@ -100,8 +100,44 @@ export type CaptionsOption = {
   background?: "solid" | "none";
 };
 
-/** A shot list edit operation, named by `op` (add_scene, add_shot, set_shot, attach_media and the rest). */
+/**
+ * A shot list edit operation, named by `op`: scenes (add_scene, rename_scene, move_scene, remove_scene),
+ * shots (add_shot, set_shot, move_shot, remove_shot), columns (add_column, rename_column, move_column,
+ * hide_column, set_column_options, remove_column) and files (attach_media, detach_media).
+ */
 export type ShotListOperation = JsonObject & { op: string };
+
+/** The kinds of shot list column. A column's type never changes. */
+export type ColumnType =
+  | "text"
+  | "long_text"
+  | "dialogue"
+  | "media"
+  | "references"
+  | "takes"
+  | "select"
+  | "number"
+  | "links";
+
+/** What a reference is for, on a `references` column. */
+export type ReferenceRole = "character" | "location" | "style" | "prop" | "voice" | "input_clip" | "first_frame";
+
+/** A shot list column, as a template or a project's shot list has it. `options` is only for `select`. */
+export interface Column {
+  id: string;
+  name: string;
+  type: ColumnType;
+  options?: { choices: string[] };
+  hidden?: boolean;
+}
+
+/** A saved column list a project can start from. Built in: `talking_head` and `ai_drama`. */
+export interface Template {
+  id: string;
+  name: string;
+  builtin: boolean;
+  columns: Column[];
+}
 
 export interface UploadPart {
   number: number;
@@ -300,8 +336,13 @@ export class VidJutsu {
   listProjects(options: { cursor?: string; limit?: number } = {}) {
     return this.request("GET", `/projects${query(options)}`);
   }
-  init(project: string, idempotencyKey?: string) {
-    return this.request("POST", "/projects", { project, idempotency_key: idempotencyKey });
+  /**
+   * Create a project. `template` is the shot list template its columns come from
+   * (default `talking_head`; see `templates()`).
+   */
+  init(project: string, options: { template?: string; idempotencyKey?: string } | string = {}) {
+    const { template, idempotencyKey } = typeof options === "string" ? { template: undefined, idempotencyKey: options } : options;
+    return this.request("POST", "/projects", { project, ...(template ? { template } : {}), idempotency_key: idempotencyKey });
   }
   /** The current timeline (or an earlier revision), with who is in the project right now (presence, working_on). */
   show(project: string, options: { revision?: string } = {}) {
@@ -352,9 +393,19 @@ export class VidJutsu {
 
   // ---- Shot list, files and words ----
 
-  /** The shot list: scenes, shots and the files filed under each, with where each file is on the timeline. */
-  shotList(project: string) {
-    return this.request("GET", `/projects/${seg(project)}/shot-list`);
+  /**
+   * The shot list: its template, columns, scenes, shots (their `values` by column id) and the files filed
+   * under each scene. `scene` returns only that scene; `resolve` adds each shot's `fields`, as `getShot` has them.
+   */
+  shotList(project: string, options: { scene?: string; resolve?: boolean } = {}) {
+    return this.request("GET", `/projects/${seg(project)}/shot-list${query(options)}`);
+  }
+  /**
+   * One shot, ready to work from: its scene, place, neighbours, `timeline` clips and `fields`
+   * (every column with its value), each file with a fresh download link.
+   */
+  getShot(project: string, shot: string) {
+    return this.request("GET", `/projects/${seg(project)}/shot-list/shots/${seg(shot)}`);
   }
   /** Change the shot list with a batch of operations, all or none. A stale expected_revision is a 409 (stale_revision). */
   shotListEdit(project: string, expectedRevision: number, operations: ShotListOperation[], idempotencyKey?: string) {
@@ -471,6 +522,28 @@ export class VidJutsu {
    */
   reportBug(report: BugReport) {
     return this.request("POST", "/bug-reports", report as JsonObject);
+  }
+
+  // ---- Shot list templates ----
+
+  /** The shot list templates you can start a project from: the built-in ones and yours. */
+  templates() {
+    return this.request("GET", "/shot-list/templates");
+  }
+  /**
+   * Save a template from columns (`{name, columns, id?}`) or from a project's current columns
+   * (`{name, project}`). Saving the same id again replaces it; built-in templates can't be replaced.
+   */
+  saveTemplate(
+    body:
+      | { name: string; columns: Array<Omit<Column, "hidden">>; id?: string }
+      | { name: string; project: string; id?: string },
+  ) {
+    return this.request("POST", "/shot-list/templates", body);
+  }
+  /** Delete one of your templates. Projects made from it keep their columns. */
+  deleteTemplate(template: string) {
+    return this.request("DELETE", `/shot-list/templates/${seg(template)}`);
   }
 
   // ---- Screen and camera layouts ----

@@ -32,7 +32,7 @@ Media
 
 Projects
   projects [--limit <n>] [--cursor <c>]           Your projects, most recently changed first
-  init <project>                     Create a project
+  init <project> [--template <id>]   Create a project; its shot list columns come from the template
   show <project> [--revision <r>]    Its timeline, and who is in it right now
   head <project>                     Its head revision, without the timeline
   edit <project> <ops.json | -> [--summary <line>]
@@ -47,10 +47,14 @@ History
   restore <project> <revision> [--expected-head <r>]
 
 Shot list
-  shot-list <project>                The scenes, shots and the files filed under each
+  shot-list <project> [--scene <id>] [--resolve]
+                                     The columns, scenes, shots and the files filed under each
+  shot-list shot <project> <shot>    One shot with every column's value and fresh file links
   shot-list edit <project> <ops.json | -> [--expected-revision <n>]
   shot-list import <project> <episode.json | -> [--replace] [--expected-revision <n>]
                                      Bring an episode plan in as the shot list
+  templates [list | save <file.json> | delete <template>]
+                                     Shot list templates (save takes {name, columns} or {name, project})
 
 Layouts and sound
   layouts [list | save <file.json> | delete <layout_id>]
@@ -110,7 +114,7 @@ function parse(argv: string[]): Args {
   }
   return { positional, flags };
 }
-const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run", "captions"]);
+const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run", "captions", "resolve", "replace"]);
 
 function configPath(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
@@ -345,7 +349,7 @@ async function run(argv: string[]) {
     case "projects":
       return print(await client().listProjects({ cursor: flag(args, "cursor"), limit: int(args, "limit") }));
     case "init":
-      return print(await client().init(need(rest[0], "project")));
+      return print(await client().init(need(rest[0], "project"), { template: flag(args, "template") }));
     case "show":
       return print(await client().show(need(rest[0], "project"), { revision: flag(args, "revision") }));
     case "head":
@@ -410,7 +414,15 @@ async function run(argv: string[]) {
         if (expected === undefined) expected = Number((await api.shotList(project)).revision ?? 0);
         return print(await api.shotListImport(project, expected, episode, args.flags.replace ? { replace: true } : {}));
       }
-      if (rest[0] !== "edit") return print(await client().shotList(need(rest[0], "project")));
+      if (rest[0] === "shot") return print(await client().getShot(need(rest[1], "project"), need(rest[2], "shot id")));
+      if (rest[0] !== "edit") {
+        return print(
+          await client().shotList(need(rest[0], "project"), {
+            scene: flag(args, "scene"),
+            ...(args.flags.resolve ? { resolve: true } : {}),
+          }),
+        );
+      }
       const api = client();
       const project = need(rest[1], "project");
       const body = await readOperations(need(rest[2], "operations file (or - for stdin)"));
@@ -442,6 +454,16 @@ async function run(argv: string[]) {
         ...(screenshot ? { screenshot } : {}),
         app: { name: "vidjutsu-cli", version: VERSION, os: `${platform()} ${release()} ${arch()}` },
       }));
+    }
+    case "templates": {
+      const [action = "list", value] = rest;
+      if (action === "list") return print(await client().templates());
+      if (action === "save") {
+        const template = JSON.parse(readFileSync(need(value, "template file (or - for stdin)") === "-" ? 0 : value!, "utf8"));
+        return print(await client().saveTemplate(template));
+      }
+      if (action === "delete") return print(await client().deleteTemplate(need(value, "template id")));
+      return fail(`unknown templates action ${action}`);
     }
     case "layouts": {
       const [action = "list", value] = rest;
