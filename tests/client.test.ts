@@ -185,10 +185,10 @@ describe("VidJutsu", () => {
     await api.shotList("drama", { scene: "sc_1", resolve: true });
     await api.getShot("drama", "sh_1");
     expect(calls.map((call) => `${call.method} ${call.url}`)).toEqual([
-      "GET https://api.vidjutsu.ai/shot-list/templates",
-      "POST https://api.vidjutsu.ai/shot-list/templates",
-      "POST https://api.vidjutsu.ai/shot-list/templates",
-      "DELETE https://api.vidjutsu.ai/shot-list/templates/tpl%201",
+      "GET https://api.vidjutsu.ai/shot-list-templates",
+      "POST https://api.vidjutsu.ai/shot-list-templates",
+      "POST https://api.vidjutsu.ai/shot-list-templates",
+      "DELETE https://api.vidjutsu.ai/shot-list-templates/tpl%201",
       "POST https://api.vidjutsu.ai/projects",
       "POST https://api.vidjutsu.ai/projects",
       "GET https://api.vidjutsu.ai/projects/drama/shot-list?scene=sc_1&resolve=true",

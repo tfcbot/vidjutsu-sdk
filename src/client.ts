@@ -131,7 +131,7 @@ export interface Column {
   hidden?: boolean;
 }
 
-/** A saved column list a project can start from. Built in: `talking_head` and `ai_drama`. */
+/** A saved column list a project can start from. Built in: `talking_head` (the default), `ai_drama` and `blank`. */
 export interface Template {
   id: string;
   name: string;
@@ -338,7 +338,7 @@ export class VidJutsu {
   }
   /**
    * Create a project. `template` is the shot list template its columns come from
-   * (default `talking_head`; see `templates()`).
+   * (default `talking_head`; see `templates()`). The answer's `shot_list` says which.
    */
   init(project: string, options: { template?: string; idempotencyKey?: string } | string = {}) {
     const { template, idempotencyKey } = typeof options === "string" ? { template: undefined, idempotencyKey: options } : options;
@@ -528,22 +528,23 @@ export class VidJutsu {
 
   /** The shot list templates you can start a project from: the built-in ones and yours. */
   templates() {
-    return this.request("GET", "/shot-list/templates");
+    return this.request("GET", "/shot-list-templates");
   }
   /**
    * Save a template from columns (`{name, columns, id?}`) or from a project's current columns
-   * (`{name, project}`). Saving the same id again replaces it; built-in templates can't be replaced.
+   * (`{name, project}`). Answers `{template, replaced}`. Saving the same id again replaces it; built-in
+   * templates can't be replaced. A column's id is made from its name if left out; a `select` needs `options`.
    */
   saveTemplate(
     body:
-      | { name: string; columns: Array<Omit<Column, "hidden">>; id?: string }
+      | { name: string; columns: Array<{ name: string; type: ColumnType; id?: string; options?: { choices: string[] } }>; id?: string }
       | { name: string; project: string; id?: string },
   ) {
-    return this.request("POST", "/shot-list/templates", body);
+    return this.request("POST", "/shot-list-templates", body);
   }
   /** Delete one of your templates. Projects made from it keep their columns. */
-  deleteTemplate(template: string) {
-    return this.request("DELETE", `/shot-list/templates/${seg(template)}`);
+  deleteTemplate(templateId: string) {
+    return this.request("DELETE", `/shot-list-templates/${seg(templateId)}`);
   }
 
   // ---- Screen and camera layouts ----
