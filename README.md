@@ -32,8 +32,9 @@ prints the API's JSON. `vidjutsu --help` lists them all.
 Usage is paid from a prepaid wallet: no monthly fee, and watching is free. The
 first load is at least $59 and turns on auto-reload ($59 when the balance drops
 below $10; `--no-auto-reload` at checkout, or `vidjutsu billing auto-top-up
---off`, turns it off). Unused credit from the first load is refundable for 14
-days; top-ups and auto-reloads are not. Add credits any time with
+--off`, turns it off). Unused credit from the first load is refundable for 3
+days: email admin@vidjutsu.ai. Top-ups and auto-reloads are not refundable, and
+credit expires 12 months after purchase. Add credits any time with
 `vidjutsu billing top-up --amount 20` ($10 minimum); `vidjutsu usage` shows the
 balance.
 
