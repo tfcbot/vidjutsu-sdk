@@ -18,8 +18,10 @@ Account
   account | usage | entitlements     Your account, usage and wallet balance, your limits
   wallet                             Wallet balance, card on file, auto top-up and this period's spend
   keys [list | create <name> | revoke <key_id>]
-  billing checkout [--amount <usd>]  Sign up: add a card and fund your prepaid wallet ($5 minimum)
-  billing top-up [--amount <usd>]    Add credits to your wallet (default $10, $5 minimum)
+  billing checkout [--amount <usd>] [--no-auto-reload]
+                                     Sign up: add a card and load your wallet ($59 minimum; auto-reload
+                                     $59 when below $10 is on unless --no-auto-reload)
+  billing top-up [--amount <usd>]    Add credits to your wallet ($10 minimum, the default)
   billing auto-top-up --on|--off [--threshold <usd>] [--amount <usd>]
   billing portal                     Your saved card and payment receipts
 
@@ -177,7 +179,7 @@ async function login(args: Args) {
     mode: 0o600,
   });
   say(`Signed in. Key saved to ${path}.`);
-  if (done.checkout_url) say(`Add a card and fund your wallet ($5 minimum): ${done.checkout_url}`);
+  if (done.checkout_url) say(`Add a card and load your wallet ($59 minimum): ${done.checkout_url}`);
   const { api_key: _secret, ...rest } = done;
   print(rest);
 }
@@ -302,7 +304,9 @@ async function run(argv: string[]) {
       const amount = flag(args, "amount");
       const money = amount === undefined ? {} : { amount_usd: Number(amount) };
       if (amount !== undefined && !(Number(amount) > 0)) fail("--amount must be a dollar amount, such as 5 or 12.50");
-      if (action === "checkout") return print(await client().billingCheckout(money));
+      if (action === "checkout") {
+        return print(await client().billingCheckout({ ...money, ...(args.flags["no-auto-reload"] ? { auto_reload: false } : {}) }));
+      }
       if (action === "top-up" || action === "topup") return print(await client().billingTopUp(money));
       if (action === "portal") return print(await client().billingPortal());
       if (action === "auto-top-up") {

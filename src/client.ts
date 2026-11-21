@@ -238,11 +238,14 @@ export class VidJutsu {
   revokeKey(keyId: string) {
     return this.request("DELETE", `/keys/${seg(keyId)}`);
   }
-  /** Sign up for the prepaid wallet: a card and a first payment (amount_usd, default 5, at least 5). */
-  billingCheckout(options: { amount_usd?: number; success_url?: string; cancel_url?: string } = {}) {
+  /**
+   * Sign up for the prepaid wallet: a card and a first load (amount_usd, default 59, at least 59).
+   * Auto-reload ($59 when the balance drops below $10) is on unless auto_reload is false.
+   */
+  billingCheckout(options: { amount_usd?: number; auto_reload?: boolean; success_url?: string; cancel_url?: string } = {}) {
     return this.request<{ url: string } & JsonObject>("POST", "/billing/checkout", options);
   }
-  /** Add credits to the wallet any time (amount_usd, default 10, at least 5). */
+  /** Add credits to the wallet any time (amount_usd, default 10, at least 10). */
   billingTopUp(options: { amount_usd?: number; success_url?: string; cancel_url?: string } = {}) {
     return this.request<{ url: string } & JsonObject>("POST", "/billing/top-up", options);
   }

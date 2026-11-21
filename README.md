@@ -17,7 +17,7 @@ curl -fsSL https://raw.githubusercontent.com/tfcbot/vidjutsu-sdk/main/install.sh
 
 ```sh
 vidjutsu login                 # email, then the code we send you; saves an API key
-vidjutsu billing checkout      # add a card and fund your prepaid wallet ($5 minimum)
+vidjutsu billing checkout      # add a card and load your prepaid wallet ($59 minimum)
 
 vidjutsu upload take1.mp4      # straight to storage; prints the media item
 vidjutsu init film
@@ -29,8 +29,13 @@ vidjutsu render film --out film.mp4
 "expected_head": "<revision>"}` so a retry can't apply twice. Every command
 prints the API's JSON. `vidjutsu --help` lists them all.
 
-Usage is paid from a prepaid wallet: no monthly fee. Add credits any time with
-`vidjutsu billing top-up --amount 20`; `vidjutsu usage` shows the balance.
+Usage is paid from a prepaid wallet: no monthly fee, and watching is free. The
+first load is at least $59 and turns on auto-reload ($59 when the balance drops
+below $10; `--no-auto-reload` at checkout, or `vidjutsu billing auto-top-up
+--off`, turns it off). Unused credit from the first load is refundable for 14
+days; top-ups and auto-reloads are not. Add credits any time with
+`vidjutsu billing top-up --amount 20` ($10 minimum); `vidjutsu usage` shows the
+balance.
 
 Set `VIDJUTSU_API_KEY` to use a key without `login`. Keys live in
 `~/.config/vidjutsu/cloud.json` (mode 600). Set `VIDJUTSU_CLIENT` (e.g.
