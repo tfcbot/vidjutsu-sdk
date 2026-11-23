@@ -69,6 +69,39 @@ vidjutsu captions film --format vtt      # the captions as a WebVTT file
 vidjutsu bug "Render stuck at 90%" --project film --logs agent.log  # tell the VidJutsu team (free)
 ```
 
+## Motion graphics
+
+Write a scene as an HTML page that defines `window.render(t)` (draw time `t`
+from `t` alone, no network) and VidJutsu renders it frame by frame on
+locked-down boxes, billed by box time ($0.03 per vCPU-minute). A film is a
+folder: `film.json` plus one folder per scene.
+
+```text
+launch/
+  film.json        {"width": 1920, "height": 1080, "fps": 30,
+                    "scenes": [{"dir": "title", "seconds": 4}, {"dir": "lower-third", "seconds": 6}]}
+  title/index.html
+  lower-third/index.html
+  lower-third/logo.png
+```
+
+```sh
+vidjutsu graphics render ./launch --name launch-title   # upload, render, print the video's media id
+vidjutsu graphics ws push launch ./launch               # keep scenes in a workspace and edit them like code
+vidjutsu graphics ws patch launch title/index.html --find "Hello" --with "Launch day"
+vidjutsu graphics render ./launch/film.json --workspace launch
+vidjutsu graphics ws pull launch ./launch-copy
+```
+
+Files are sent by SHA-256: small text files go inline, the rest by upload link,
+and anything already stored is never sent again. The result is a video in your
+library; place it on a timeline with `edit` (`add_media`, `insert_clip`).
+
+```ts
+const job = await client.renderGraphics(files, { width: 1920, height: 1080, scenes: [{ dir: "title", seconds: 4 }] });
+console.log(job.output); // { media: { id, ... }, source: { bundle, film }, ... }
+```
+
 ## Agents (MCP)
 
 Point any MCP client at `https://api.vidjutsu.ai/mcp`. It signs in with OAuth,
@@ -84,6 +117,7 @@ REST operations, and the SDK has one method for each:
 | Layouts | `layouts`, `save_layout`, `delete_layout`, `apply_layout` |
 | Sound | `studio_sound` |
 | Look and check | `frame`, `check` |
+| Motion graphics | `graphics_files`, `make_graphics`, `graphics_status`, `cancel_graphics`, `graphics_source`, `graphics_list`, `graphics_read`, `graphics_write` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
 | Renders and prices | `quote`, `render`, `render_status`, `cancel_render`, `captions` |
 | Bug reports | `report_bug` (only the VidJutsu team can read reports) |
