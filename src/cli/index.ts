@@ -8,6 +8,7 @@ import { createInterface } from "node:readline/promises";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type BugReport, type Json, type JsonObject, type StartedJob } from "../client";
+import { GRAPHICS_HELP, graphics } from "./graphics";
 import { VERSION } from "./version";
 
 const HELP = `vidjutsu ${VERSION}: video editing for agents, in the cloud.
@@ -84,6 +85,8 @@ Bug reports
   bug <summary...> [--details <text>] [--project <p>] [--logs <file>] [--screenshot <png|jpg>] [--sentry <event_id>]
                                      Tell the VidJutsu team about a bug (free; only the team can read it)
 
+${GRAPHICS_HELP}
+
 Prices and renders
   quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
   render <project> [--json <body>] [--no-wait] [--out <file>]
@@ -116,7 +119,7 @@ function parse(argv: string[]): Args {
   }
   return { positional, flags };
 }
-const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run", "captions", "resolve", "replace"]);
+const BOOLEAN = new Set(["no-wait", "help", "version", "follow", "on", "off", "clear", "dry-run", "captions", "resolve", "replace", "keep"]);
 
 function configPath(): string {
   const base = process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
@@ -623,6 +626,8 @@ async function run(argv: string[]) {
       writeFileSync(out, String(result.file ?? ""));
       return say(`Saved ${out}`);
     }
+    case "graphics":
+      return graphics(rest, args, { client, print, say, fail, need, flag });
     case "status":
       return print(await client().renderStatus(need(rest[0], "job id")));
     case "cancel":

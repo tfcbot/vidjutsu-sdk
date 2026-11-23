@@ -139,6 +139,94 @@ export interface Template {
   columns: Column[];
 }
 
+// ---- Motion graphics ----
+
+/** One file of a graphics bundle: its path inside the bundle, length and SHA-256. */
+export type GraphicsFileRef = { path: string; bytes: number; sha256: string };
+/** A file as sent to graphicsFiles: text files up to 256 KB may carry their `text` inline (2 MB per call). */
+export type GraphicsSentFile = GraphicsFileRef & { text?: string };
+/** A file still to upload: PUT its bytes to `put_url`. */
+export type GraphicsMissing = { sha256: string; bytes: number; paths: string[]; put_url: string };
+/** The answer of graphicsFiles and graphicsWrite: the bundle id and the files still to upload. */
+export type GraphicsBundle = JsonObject & {
+  bundle: string;
+  files: number;
+  bytes: number;
+  stored_inline: number;
+  missing: GraphicsMissing[];
+  expires_at: number;
+  /** Set by graphicsWrite. */
+  version?: number;
+  workspace?: string;
+};
+/** A finishing effect applied to every frame: grain or vignette (amount 0 to 1), blur (radius 0 to 20 px). */
+export type GraphicsEffect =
+  | { type: "grain"; amount: number }
+  | { type: "vignette"; amount: number }
+  | { type: "blur"; radius: number };
+/** One scene: a folder of the bundle whose page defines `window.render(t)`. */
+export type GraphicsScene = {
+  /** Scene length in seconds. */
+  seconds: number;
+  /** Folder inside the bundle ("" for the top). */
+  dir?: string;
+  /** Entry page in that folder (default index.html). */
+  entry?: string;
+  /** Global function the page defines (default render). */
+  render?: string;
+  /** Page time (seconds) of the scene's first frame. */
+  start?: number;
+  /** Videos in the folder decoded into stills before capture. */
+  extract?: { video: string; frames: string; fps?: number | null; jpeg_q?: number; start_number?: number }[];
+};
+/** The film: size (even width, at most 3840 x 2160), frame rate (1 to 60), effects and 1 to 200 scenes. */
+export type GraphicsFilm = {
+  width: number;
+  height: number;
+  scenes: GraphicsScene[];
+  fps?: number;
+  /** Captured frames blended into each output frame (motion blur), 1 to 4. */
+  subframes?: number;
+  /** JPEG quality of captured frames, 50 to 100. */
+  quality?: number;
+  effects?: GraphicsEffect[];
+};
+/** One change to a text file in a workspace: `find` must occur exactly once. */
+export type GraphicsPatch = { path: string; find: string; replace: string };
+/** One new version of a workspace, made from the current one and these changes (up to 200). */
+export type GraphicsWrite = {
+  /** Text files written whole (UTF-8, up to 256 KB each). */
+  write?: { path: string; text: string }[];
+  patch?: GraphicsPatch[];
+  /** Other files (images, fonts, footage) by hash: missing ones get a PUT link. */
+  files?: GraphicsFileRef[];
+  delete?: string[];
+  /** The bundle you read; if the workspace moved on since, nothing is written (409). */
+  expected_bundle?: string;
+  /** Go back to an earlier bundle of this workspace (from history) first. */
+  restore?: string;
+};
+/** A file to send with uploadGraphics: its path inside the bundle and its bytes. */
+export type GraphicsLocalFile = { path: string; data: Uint8Array };
+
+/** Largest text file sent inline, and all inline text of one call. */
+export const GRAPHICS_INLINE_MAX = 256 * 1024;
+export const GRAPHICS_INLINE_TOTAL = 2 * 1024 * 1024;
+const TEXT_EXTENSIONS = new Set([
+  "html", "htm", "js", "mjs", "cjs", "css", "svg", "json", "txt", "md", "xml", "csv", "glsl", "frag", "vert", "map",
+]);
+
+/** The file's text when it is a UTF-8 text file (by extension) small enough to send inline. */
+export function graphicsText(path: string, data: Uint8Array): string | undefined {
+  const ext = path.slice(path.lastIndexOf(".") + 1).toLowerCase();
+  if (!TEXT_EXTENSIONS.has(ext) || data.byteLength > GRAPHICS_INLINE_MAX) return undefined;
+  try {
+    return new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(data);
+  } catch {
+    return undefined;
+  }
+}
+
 export interface UploadPart {
   number: number;
   url: string;
@@ -663,6 +751,137 @@ export class VidJutsu {
       if (TERMINAL.has(job.state)) return job;
       await new Promise((resolve) => setTimeout(resolve, options.intervalMs ?? 3000));
     }
+  }
+  // ---- Motion graphics ----
+
+  /**
+   * Send a bundle's file list (every file, by path, length and SHA-256). Text
+   * files up to 256 KB may carry `text` (2 MB per call) and are stored at once;
+   * the answer's `missing` has a PUT link for each other file not stored yet.
+   * Free.
+   */
+  graphicsFiles(files: GraphicsSentFile[]) {
+    return this.request<GraphicsBundle>("POST", "/graphics/files", { files });
+  }
+  /** A bundle's files with one-day download links, so a scene can be edited instead of written again. Free. */
+  graphicsSource(bundle: string) {
+    return this.request("GET", `/graphics/bundles/${seg(bundle)}`);
+  }
+  /** A graphics workspace: its current bundle, version, files and earlier bundles. Free. */
+  graphicsList(workspace: string) {
+    return this.request<JsonObject & { workspace: string; bundle: string | null; version: number; files: GraphicsFileRef[]; history: string[] }>(
+      "GET",
+      `/graphics/workspaces/${seg(workspace)}`,
+    );
+  }
+  /** One file of a workspace: `text` for text files, else a download `url`. Free. */
+  graphicsRead(workspace: string, path: string) {
+    return this.request<JsonObject & GraphicsFileRef & { text?: string; url?: string }>(
+      "GET",
+      `/graphics/workspaces/${seg(workspace)}/file${query({ path })}`,
+    );
+  }
+  /**
+   * Write a new version of a workspace: whole text files, find-and-replace
+   * patches, other files by hash (PUT the `missing` ones), deletes. A stale
+   * expected_bundle is a 409. Free.
+   */
+  graphicsWrite(workspace: string, changes: GraphicsWrite) {
+    return this.request<GraphicsBundle>("POST", `/graphics/workspaces/${seg(workspace)}`, changes);
+  }
+  /**
+   * Render a film from a bundle (every missing file PUT) or a workspace. Our
+   * renderer draws each scene's `render(t)` on locked-down boxes; billed by box
+   * time from the wallet. Answers a job; poll graphicsStatus. When it succeeds,
+   * `output.media` is the video in your library: place it with edit (add_media, insert_clip).
+   */
+  makeGraphics(
+    body: { film: GraphicsFilm; bundle?: string; workspace?: string; name?: string },
+    idempotencyKey?: string,
+  ) {
+    return this.request<RenderJob>(
+      "POST",
+      "/graphics",
+      { ...body, ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}) },
+      idempotencyKey,
+    );
+  }
+  graphicsStatus(jobId: string) {
+    return this.request<RenderJob>("GET", `/graphics/${seg(jobId)}`);
+  }
+  cancelGraphics(jobId: string) {
+    return this.request<RenderJob>("POST", `/graphics/${seg(jobId)}/cancel`);
+  }
+  /** Poll a graphics job until it ends. */
+  async waitForGraphics(
+    jobId: string,
+    options: { intervalMs?: number; onUpdate?: (job: RenderJob) => void } = {},
+  ): Promise<RenderJob> {
+    for (;;) {
+      const job = await this.graphicsStatus(jobId);
+      options.onUpdate?.(job);
+      if (TERMINAL.has(job.state)) return job;
+      await new Promise((resolve) => setTimeout(resolve, options.intervalMs ?? 3000));
+    }
+  }
+
+  /**
+   * Send a film's files and answer its bundle id: hash every file, send small
+   * text files inline (up to 2 MB), then PUT the rest to their links. Files the
+   * account already stored are never sent again.
+   */
+  async uploadGraphics(
+    files: GraphicsLocalFile[],
+    options: { onUpload?: (missing: GraphicsMissing) => void } = {},
+  ): Promise<GraphicsBundle> {
+    const byHash = new Map<string, Uint8Array>();
+    const sent: GraphicsSentFile[] = [];
+    let inline = 0;
+    const inlined = new Set<string>();
+    for (const file of files) {
+      const sha256 = await sha256Hex(file.data);
+      byHash.set(sha256, file.data);
+      const entry: GraphicsSentFile = { path: file.path, bytes: file.data.byteLength, sha256 };
+      const text = inlined.has(sha256) ? undefined : graphicsText(file.path, file.data);
+      if (text !== undefined && inline + file.data.byteLength <= GRAPHICS_INLINE_TOTAL) {
+        entry.text = text;
+        inline += file.data.byteLength;
+        inlined.add(sha256);
+      }
+      sent.push(entry);
+    }
+    const bundle = await this.graphicsFiles(sent);
+    await this.putMissing(bundle.missing, byHash, options.onUpload);
+    return bundle;
+  }
+
+  /** PUT each missing file's bytes to its link. */
+  async putMissing(
+    missing: GraphicsMissing[],
+    byHash: Map<string, Uint8Array>,
+    onUpload?: (missing: GraphicsMissing) => void,
+  ): Promise<void> {
+    for (const file of missing) {
+      const data = byHash.get(file.sha256);
+      if (!data) throw new VidJutsuError(400, "graphics_file_unknown", `no bytes for ${file.paths.join(", ")}`);
+      onUpload?.(file);
+      const response = await this.fetcher(file.put_url, { method: "PUT", body: data as unknown as BodyInit });
+      if (!response.ok) {
+        throw new VidJutsuError(response.status, "graphics_upload_failed", `${file.paths[0]} was refused (HTTP ${response.status})`);
+      }
+    }
+  }
+
+  /** Upload a film's files, start the render and wait for it: the finished job (output.media is the video). */
+  async renderGraphics(
+    files: GraphicsLocalFile[],
+    film: GraphicsFilm,
+    options: { name?: string; idempotencyKey?: string; onUpdate?: (job: RenderJob) => void; intervalMs?: number } = {},
+  ): Promise<RenderJob> {
+    const { bundle } = await this.uploadGraphics(files);
+    const job = await this.makeGraphics({ film, bundle, ...(options.name ? { name: options.name } : {}) }, options.idempotencyKey);
+    if (TERMINAL.has(job.state)) return job;
+    return this.waitForGraphics(job.job_id, { onUpdate: options.onUpdate, intervalMs: options.intervalMs });
   }
 }
 
