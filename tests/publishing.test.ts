@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { VidJutsu } from "../src/client";
@@ -137,6 +137,7 @@ describe("vidjutsu accounts and post (CLI against a fake API)", () => {
     const seen: { route: string; body?: unknown }[] = [];
     const server = Bun.serve({
       port: 0,
+      hostname: "127.0.0.1",
       async fetch(request) {
         const url = new URL(request.url);
         const body = request.method === "POST" ? await request.json() : undefined;
@@ -161,6 +162,7 @@ describe("vidjutsu accounts and post (CLI against a fake API)", () => {
       expect(connect.err).toContain("https://connect.test/x");
       const scheduled = await cli("post", "schedule", "--job", "j1", "--accounts", "sa_1", "--caption", "Day 1", "--at", "2026-12-01T15:00:00Z");
       expect(scheduled.code).toBe(0);
+      expect(scheduled.err).toContain("Queued by VidJutsu");
       expect(JSON.parse(scheduled.out).post.id).toBe("po_1");
       const listed = await cli("posts", "--state", "failed");
       expect(listed.code).toBe(0);
@@ -176,6 +178,95 @@ describe("vidjutsu accounts and post (CLI against a fake API)", () => {
       ]);
     } finally {
       server.stop(true);
+    }
+  });
+
+  test("TikTok now or later sends one request and reports only the returned delivery state", async () => {
+    const seen: { route: string; body?: unknown }[] = [];
+    const options = { privacy_level: "SELF_ONLY", allow_comment: false, allow_duet: false, allow_stitch: false };
+    const accounts = [{ id: "sa_tiktok", options }];
+    const at = "2027-01-03T18:00:00.000Z";
+    const held = { post: { id: "po_tiktok", state: "pending_approval", targets: [{ platform: "tiktok", state: "pending" }] }, created: true };
+    const queued = { post: { id: "po_later", state: "scheduled", scheduled_for: Date.parse(at) }, created: true };
+    const publishing = { post: { id: "po_tiktok", state: "publishing" } };
+    const published = { post: { id: "po_tiktok", state: "published", targets: [{ platform: "tiktok", state: "published", url: "https://tiktok.invalid/post" }] } };
+    let reads = 0;
+    const server = Bun.serve({
+      port: 0,
+      hostname: "127.0.0.1",
+      async fetch(request) {
+        const { pathname } = new URL(request.url);
+        const route = `${request.method} ${pathname}`;
+        const body = request.method === "POST" ? await request.json() as Record<string, unknown> : undefined;
+        seen.push({ route, ...(body ? { body } : {}) });
+        if (route === "GET /posts/po_tiktok") return Response.json(++reads === 1 ? publishing : published);
+        if (route !== "POST /posts") return new Response(null, { status: 404 });
+        if (JSON.stringify(body?.accounts) !== JSON.stringify(accounts)) {
+          return Response.json({ code: "invalid_request", message: "Unexpected TikTok destination settings" }, { status: 400 });
+        }
+        if (body?.caption === "blocked") {
+          return Response.json({ code: "payment_failed", message: "Past due", payment_url: "https://payments.invalid" }, { status: 402 });
+        }
+        return Response.json(body?.at ? queued : held, { status: 201 });
+      },
+    });
+    const dir = mkdtempSync(join(tmpdir(), "vj-cli-tiktok-"));
+    try {
+      const optionsPath = join(dir, "tiktok-options.json");
+      writeFileSync(optionsPath, JSON.stringify({ sa_tiktok: options }));
+      const env = { PATH: process.env.PATH, VIDJUTSU_API_KEY: "vj_test", VIDJUTSU_API_URL: server.url.origin };
+      const cli = async (...args: string[]) => {
+        const run = Bun.spawn(["bun", "run", join(import.meta.dir, "../src/cli/index.ts"), ...args], { env, stdin: "ignore", stdout: "pipe", stderr: "pipe" });
+        const [out, err, code] = await Promise.all([new Response(run.stdout).text(), new Response(run.stderr).text(), run.exited]);
+        return { out, err, code };
+      };
+      const schedule = (...args: string[]) => cli("post", "schedule", "--job", "j1", "--accounts", "sa_tiktok", "--options", optionsPath, ...args);
+      const help = await cli("post", "schedule", "--help");
+      expect(help.err).toContain("--at <now|ISO time>");
+      expect(help.err).toContain("For TikTok");
+      const missingTime = await schedule("--at");
+      expect(missingTime.code).toBe(1);
+      expect(missingTime.err).toContain("--at requires a value");
+      expect((await schedule("--at", "2027-01-03T13:00:00")).code).toBe(1);
+      expect((await schedule("--at", "2027-02-29T13:00:00Z")).err).toContain("--at must be an ISO time");
+      expect((await schedule("--att", at)).code).toBe(1);
+      expect((await schedule("--express-consent-given", "true")).code).toBe(1);
+      expect(seen).toEqual([]);
+
+      const now = await schedule("--at", "now", "--key", "video-1");
+      expect(now.code).toBe(0);
+      expect(JSON.parse(now.out)).toEqual(held);
+      expect(now.err).toContain("Held for owner approval");
+      expect(now.err).not.toMatch(/posted successfully|is published|accepted/i);
+
+      const later = await schedule("--at", "2027-01-03T13:00:00-05:00");
+      expect(later.code).toBe(0);
+      expect(JSON.parse(later.out)).toEqual(queued);
+      expect(later.err).toContain(`Queued by VidJutsu for ${at}`);
+
+      const progress = await cli("post", "get", "po_tiktok");
+      expect(JSON.parse(progress.out)).toEqual(publishing);
+      expect(progress.err).toContain("Publication is not confirmed");
+      const confirmed = await cli("post", "get", "po_tiktok");
+      expect(JSON.parse(confirmed.out)).toEqual(published);
+      expect(confirmed.err).toContain("VidJutsu reports that the post is published");
+
+      const rejected = await schedule("--at", "now", "--caption", "blocked");
+      expect(rejected.code).toBe(1);
+      expect(rejected.out).toBe("");
+      expect(rejected.err).toContain("payment_failed");
+      expect(rejected.err).not.toMatch(/queued|is published/i);
+      const request = { accounts, media: { job_id: "j1" } };
+      expect(seen).toEqual([
+        { route: "POST /posts", body: { ...request, idempotency_key: "video-1" } },
+        { route: "POST /posts", body: { ...request, at } },
+        { route: "GET /posts/po_tiktok" },
+        { route: "GET /posts/po_tiktok" },
+        { route: "POST /posts", body: { ...request, caption: "blocked" } },
+      ]);
+    } finally {
+      server.stop(true);
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });

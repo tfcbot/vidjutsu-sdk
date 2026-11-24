@@ -1,21 +1,24 @@
 // `vidjutsu accounts ...` and `vidjutsu post ...`: connect social accounts and
 // post finished videos to them, now or at a time.
 import { readFileSync } from "node:fs";
-import type { JsonObject, Platform, PostState, SchedulePost } from "../client";
+import type { JsonObject, Platform, Post, PostState, SchedulePost } from "../client";
 import type { Cli } from "./graphics";
 
 export const PUBLISHING_HELP = `Publishing (TikTok, Instagram, YouTube)
   accounts [list]                    Your connected social accounts
   accounts connect <tiktok|instagram|youtube> [--return-to app|page]
                                      Print a link: open it in a browser to sign in to the platform
-  accounts approval <social_account_id> --on|--off   Posts to it wait for approval (post approve)
   accounts disconnect <social_account_id>
   post schedule (--job <render job_id> | --hash <media hash> [--type video|image]) --accounts <id,id>
-                [--caption <text> | --caption-file <file>] [--at <ISO time>] [--options <file.json>] [--key <key>]
-                                     Post now, or at --at. --options is {"<social_account_id>": {platform options}}
-                                     (YouTube needs a title: {"<id>": {"title": "..."}})
+                [--caption <text> | --caption-file <file>] [--at <now|ISO time>] [--options <file.json>] [--key <key>]
+                                     Queue for now (default), or later at a timestamp with a time zone.
+                                     For TikTok, use its connected ID from \`vidjutsu accounts\` and pass
+                                     your audience and interaction choices through --options.
+                                     --options is {"<social_account_id>": {platform options}}.
+                                     YouTube requires a title and an explicit visibility for each account.
+                                     The API may hold the post. Check its status with \`vidjutsu post get <post_id>\`.
   post list [--state <state>] [--limit <n>] [--cursor <c>]
-  post get <post_id> | post approve <post_id> | post cancel <post_id> | post stats <post_id>
+  post get <post_id> | post cancel <post_id> | post stats <post_id>
   post reschedule <post_id> --at <ISO time | now>`;
 
 type Args = { positional: string[]; flags: Record<string, string | true> };
@@ -31,17 +34,26 @@ const STATES = new Set<PostState>([
   "canceled",
   "paused_unpaid",
 ]);
+const SCHEDULE_FLAGS = new Set(["job", "hash", "type", "accounts", "caption", "caption-file", "at", "options", "key"]);
 
 /** An ISO time with a date, a time of day and a zone (Z or +hh:mm), sent in UTC. */
 export function isoTime(value: string, fail: (message: string) => never): string {
   const ms = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? Date.parse(value) : NaN;
-  if (Number.isNaN(ms)) fail(`--at must be an ISO time such as 2026-12-01T15:00:00Z (got ${value})`);
+  // Date.parse rolls impossible dates (such as February 30) into the next month.
+  const date = value.slice(0, 10);
+  if (Number.isNaN(ms) || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) {
+    fail(`--at must be an ISO time such as 2026-12-01T15:00:00Z (got ${value})`);
+  }
   return new Date(ms).toISOString();
 }
 
 /** The schedule_post body from the command line's flags. */
 export function scheduleBody(args: Args, cli: Pick<Cli, "fail" | "flag">): SchedulePost {
   const { fail, flag } = cli;
+  for (const [name, value] of Object.entries(args.flags)) {
+    if (!SCHEDULE_FLAGS.has(name)) fail(`unknown post schedule flag --${name}`);
+    if (value === true) fail(`--${name} requires a value`);
+  }
   const job = flag(args, "job");
   const hash = flag(args, "hash");
   if (!job === !hash) fail("give the video as --job <render job_id> or --hash <media hash> (one of them)");
@@ -65,6 +77,39 @@ export function scheduleBody(args: Args, cli: Pick<Cli, "fail" | "flag">): Sched
     ...(at !== undefined && at !== "now" ? { at: isoTime(at, fail) } : {}),
     ...(key ? { idempotency_key: key } : {}),
   };
+}
+
+function reportPost(result: { post: Post }, cli: Pick<Cli, "print" | "say">): void {
+  const post = result?.post;
+  const time = typeof post?.scheduled_for === "number" ? new Date(post.scheduled_for) : undefined;
+  const when = time && Number.isFinite(time.getTime()) ? ` for ${time.toISOString()}` : "";
+  switch (post?.state) {
+    case "scheduled":
+      cli.say(`Queued by VidJutsu${when}. Not posted yet.`);
+      break;
+    case "pending_approval":
+      cli.say(post.requeue_required === true
+        ? "Held by VidJutsu. The API says a new request is required."
+        : "Held for owner approval by VidJutsu. Not posted yet.");
+      break;
+    case "paused_unpaid":
+      cli.say("Held by VidJutsu because payment is overdue.");
+      break;
+    case "publishing":
+      cli.say("Dispatch in progress at VidJutsu. Publication is not confirmed.");
+      break;
+    case "published":
+      cli.say("VidJutsu reports that the post is published.");
+      break;
+    case "partial":
+      cli.say("VidJutsu reports a partial result. Check each target's state in the response.");
+      break;
+    case "failed":
+    case "canceled":
+      cli.say(`VidJutsu reports the post as ${post.state}.`);
+      break;
+  }
+  cli.print(result);
 }
 
 export async function accounts(rest: string[], args: Args, cli: Cli): Promise<void> {
@@ -93,8 +138,11 @@ export async function post(rest: string[], args: Args, cli: Cli): Promise<void> 
   const { client, print, fail, need, flag } = cli;
   const [action, id] = rest;
   switch (action) {
-    case "schedule":
-      return print(await client().schedulePost(scheduleBody(args, cli)));
+    case "schedule": {
+      if (id !== undefined) fail("post schedule takes flags only; pass the destination with --accounts");
+      const body = scheduleBody(args, cli);
+      return reportPost(await client().schedulePost(body), cli);
+    }
     case "list":
     case undefined: {
       const state = flag(args, "state");
@@ -110,7 +158,7 @@ export async function post(rest: string[], args: Args, cli: Cli): Promise<void> 
       );
     }
     case "get":
-      return print(await client().getPost(need(id, "post id")));
+      return reportPost(await client().getPost(need(id, "post id")), cli);
     case "approve":
       return print(await client().approvePost(need(id, "post id")));
     case "cancel":
@@ -119,7 +167,7 @@ export async function post(rest: string[], args: Args, cli: Cli): Promise<void> 
       return print(await client().postStats(need(id, "post id")));
     case "reschedule": {
       const at = need(flag(args, "at"), "--at <ISO time | now>");
-      return print(await client().reschedulePost(need(id, "post id"), at === "now" ? null : isoTime(at, fail)));
+      return reportPost(await client().reschedulePost(need(id, "post id"), at === "now" ? null : isoTime(at, fail)), cli);
     }
     default:
       return fail(`unknown post action ${action}`);

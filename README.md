@@ -104,40 +104,73 @@ console.log(job.output); // { media: { id, ... }, source: { bundle, film }, ... 
 
 ## Publishing
 
-Connect TikTok, Instagram and YouTube accounts, then post a finished render
-(or any stored video) to them, now or at a time. Your plan sets how many
-accounts you can connect.
+Connect TikTok, Instagram and YouTube accounts, then queue a finished render
+(or a stored video) to go out now or later. Your plan sets how many accounts
+you can connect.
 
-```sh
-vidjutsu accounts connect youtube          # prints a link: sign in to YouTube there
-vidjutsu accounts                          # your accounts and their ids
-vidjutsu post schedule --job <render job_id> --accounts sa_1,sa_2 \
-  --caption "Day 1 of 30" --at 2026-12-01T15:00:00Z --options options.json
-vidjutsu posts --state scheduled           # what is coming up
-vidjutsu post stats <post_id>              # how the post is doing on each account
+For TikTok, pass your chosen audience and interaction settings in
+`tiktok-options.json`. Replace `YOUR_TIKTOK_ACCOUNT_ID` with the same ID you
+pass to `--accounts`. This example asks for private visibility (`SELF_ONLY`);
+use it only if your account offers that setting. Pick the intended audience
+explicitly rather than retrying a rejected post as public.
+
+```json
+{
+  "YOUR_TIKTOK_ACCOUNT_ID": {
+    "privacy_level": "SELF_ONLY",
+    "allow_comment": false,
+    "allow_duet": false,
+    "allow_stitch": false
+  }
+}
 ```
 
+```sh
+vidjutsu accounts connect tiktok  # one-time setup: opens no browser; prints a sign-in link
+vidjutsu accounts                 # find your connected TikTok account ID
+
+# Choose one of these for a finished render:
+vidjutsu post schedule --job "$RENDER_JOB_ID" --accounts "$TIKTOK_ACCOUNT_ID" \
+  --caption "Day 1 of 30" --at now --options tiktok-options.json
+vidjutsu post schedule --job "$RENDER_JOB_ID" --accounts "$TIKTOK_ACCOUNT_ID" \
+  --caption "Day 1 of 30" --at 2026-12-01T15:00:00Z --options tiktok-options.json
+
+vidjutsu post get "$POST_ID"      # POST_ID is post.id in the command's JSON
+vidjutsu posts --state scheduled  # what is queued
+vidjutsu post stats "$POST_ID"    # results for each account
+```
+
+`--at now` requests the earliest dispatch (also the default when `--at` is
+omitted). An ISO timestamp with a time zone schedules it for later. Use the
+same `--key` when retrying the same request to avoid duplicate posts.
+
 ```ts
-const { url } = await client.connectAccount("tiktok");
-const { accounts } = await client.socialAccounts();
 const { post } = await client.schedulePost({
   caption: "Day 1 of 30",
   media: { job_id: render.job_id },
-  accounts: accounts.map((a) => (a.platform === "youtube" ? { id: a.id, options: { title: "Day 1 of 30" } } : a.id)),
-  at: "2026-12-01T15:00:00Z", // leave out to post now
+  accounts: [{
+    id: tiktokAccountId,
+    options: { privacy_level: "SELF_ONLY", allow_comment: false, allow_duet: false, allow_stitch: false },
+  }],
+  at: "2026-12-01T15:00:00Z", // leave out to request immediate dispatch
 });
 ```
 
-Platform options are flat, per account: YouTube needs a `title` (up to 100
-letters) and takes `visibility` and `tags`; TikTok takes `privacy_level`,
+Platform options are flat, per account. With `--options options.json`, use the
+shape `{"<social_account_id>": { ...options }}`. YouTube needs a `title` (up to
+100 characters) and an explicit `visibility` (`private`, `unlisted`, or
+`public`); `tags` are optional. TikTok takes `privacy_level`,
 `allow_comment`, `allow_duet`, `allow_stitch`, `ai_generated` and
 `commercial_content`; Instagram takes `ai_generated`.
 
-A post is `scheduled` until it goes out, then `publishing`, then `published`
-(each target's `url` is the live post), `partial` or `failed`. Posts to an
-account with approval on (`vidjutsu accounts approval <id> --on`) wait as
-`pending_approval` until `vidjutsu post approve <id>`. While a payment is
-overdue, posts wait as `paused_unpaid` and go out once it is fixed.
+The CLI sends one request without an approval prompt, prints the API's JSON on
+stdout, and describes the returned state on stderr. `scheduled` means queued,
+`pending_approval` means held for review by the signed-in owner in the web app,
+and `paused_unpaid` means held for an overdue payment. `publishing` means
+dispatch is in progress, not that TikTok (or another platform) accepted it.
+Check `post get` for `published` and each target's live `url`, or for `partial`,
+`failed`, or `canceled` results. VidJutsu enforces authorization and platform
+requirements server-side; `--at now` does not bypass them.
 
 ## Agents (MCP)
 
