@@ -858,7 +858,7 @@ export class VidJutsu {
    * after: "page" (a plain page, the default) or "app" (the web app's accounts settings).
    */
   connectAccount(platform: Platform, options: { return_to?: "app" | "page" } = {}) {
-    return this.request<JsonObject & { url: string; expires_at: Json; platform: Platform; next?: Json }>(
+    return this.request<JsonObject & { url: string; handoff_url?: string; expires_at: Json; platform: Platform; next?: Json }>(
       "POST",
       "/social-accounts/connect",
       { platform, ...options },

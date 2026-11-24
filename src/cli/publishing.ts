@@ -78,6 +78,7 @@ export async function accounts(rest: string[], args: Args, cli: Cli): Promise<vo
     if (returnTo !== undefined && returnTo !== "app" && returnTo !== "page") fail("--return-to must be app or page");
     const answer = await client().connectAccount(platform, returnTo ? { return_to: returnTo } : {});
     say(`Open this link in a browser to sign in to ${platform}: ${answer.url}`);
+    if (answer.handoff_url) say(`Or on a phone (QR code): ${answer.handoff_url}`);
     return print(answer);
   }
   if (action === "approval") {
