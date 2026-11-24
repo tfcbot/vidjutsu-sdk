@@ -22,11 +22,12 @@ describe("publishing SDK", () => {
     const { calls, client } = fake();
     await client.connectAccount("tiktok", { return_to: "page" });
     await client.socialAccounts();
+    await client.updateSocialAccount("sa_1", { approve_before_posting: true });
     await client.disconnectAccount("sa/1");
     await client.schedulePost({
       caption: "Day 1",
       media: { job_id: "j1" },
-      accounts: [{ id: "sa_1" }, { id: "sa_2", options: { privacy: "public" } }],
+      accounts: ["sa_1", { id: "sa_2", options: { title: "Day 1", visibility: "public" } }],
       at: "2026-12-01T15:00:00.000Z",
       idempotency_key: "p1",
     });
@@ -34,28 +35,35 @@ describe("publishing SDK", () => {
     await client.getPost("po_1");
     await client.reschedulePost("po_1", "2026-12-02T15:00:00.000Z");
     await client.cancelPost("po_1");
+    await client.approvePost("po_1");
+    await client.reschedulePost("po_1", null);
     await client.postStats("po_1");
     expect(calls.map((c) => `${c.method} ${c.url.replace("https://api.test", "")}`)).toEqual([
       "POST /social-accounts/connect",
       "GET /social-accounts",
+      "POST /social-accounts/sa_1",
       "DELETE /social-accounts/sa%2F1",
       "POST /posts",
       "GET /posts?state=scheduled&limit=5",
       "GET /posts/po_1",
       "POST /posts/po_1/reschedule",
       "POST /posts/po_1/cancel",
+      "POST /posts/po_1/approve",
+      "POST /posts/po_1/reschedule",
       "GET /posts/po_1/stats",
     ]);
     expect(calls[0]!.body).toEqual({ platform: "tiktok", return_to: "page" });
-    expect(calls[3]!.body).toEqual({
+    expect(calls[2]!.body).toEqual({ approve_before_posting: true });
+    expect(calls[4]!.body).toEqual({
       caption: "Day 1",
       media: { job_id: "j1" },
-      accounts: [{ id: "sa_1" }, { id: "sa_2", options: { privacy: "public" } }],
+      accounts: ["sa_1", { id: "sa_2", options: { title: "Day 1", visibility: "public" } }],
       at: "2026-12-01T15:00:00.000Z",
       idempotency_key: "p1",
     });
-    expect(calls[6]!.body).toEqual({ at: "2026-12-02T15:00:00.000Z" });
-    expect(calls[7]!.body).toBeUndefined();
+    expect(calls[7]!.body).toEqual({ at: "2026-12-02T15:00:00.000Z" });
+    expect(calls[8]!.body).toBeUndefined();
+    expect(calls[10]!.body).toEqual({ at: null });
   });
 
   test("a plan without publishing points fixUrl at the upgrade link", async () => {
@@ -86,6 +94,7 @@ describe("publishing CLI helpers", () => {
     expect(isoTime("2026-12-01T10:00:00-05:00", fail)).toBe("2026-12-01T15:00:00.000Z");
     expect(() => isoTime("tomorrow", fail)).toThrow("--at must be an ISO time");
     expect(() => isoTime("2026-12-01", fail)).toThrow("--at must be an ISO time");
+    expect(() => isoTime("2026-12-01T15:00:00", fail)).toThrow("--at must be an ISO time");
   });
 
   test("scheduleBody builds the body from flags, with per-account options", () => {
@@ -100,22 +109,21 @@ describe("publishing CLI helpers", () => {
     ).toEqual({
       caption: "Line one\nLine two",
       media: { job_id: "j1" },
-      accounts: [{ id: "sa_1" }, { id: "sa_2", options: { title: "Day 1" } }],
+      accounts: ["sa_1", { id: "sa_2", options: { title: "Day 1" } }],
       at: "2026-12-01T15:00:00.000Z",
       idempotency_key: "k1",
     });
-    expect(scheduleBody(args({ hash: "h1", accounts: "sa_1", caption: "", at: "now" }), cli)).toEqual({
-      caption: "",
-      media: { hash: "h1" },
-      accounts: [{ id: "sa_1" }],
+    expect(scheduleBody(args({ hash: "h1", type: "image", accounts: "sa_1", at: "now" }), cli)).toEqual({
+      media: { hash: "h1", type: "image" },
+      accounts: ["sa_1"],
     });
   });
 
-  test("scheduleBody refuses missing or doubled media, no accounts, no caption and stray options", () => {
+  test("scheduleBody refuses missing or doubled media, a bad type, no accounts and stray options", () => {
     expect(() => scheduleBody(args({ accounts: "a", caption: "c" }), cli)).toThrow("--job");
     expect(() => scheduleBody(args({ job: "j", hash: "h", accounts: "a", caption: "c" }), cli)).toThrow("one of them");
     expect(() => scheduleBody(args({ job: "j", caption: "c" }), cli)).toThrow("--accounts");
-    expect(() => scheduleBody(args({ job: "j", accounts: "a" }), cli)).toThrow("--caption");
+    expect(() => scheduleBody(args({ job: "j", type: "video", accounts: "a" }), cli)).toThrow("--type");
     const dir = mkdtempSync(join(tmpdir(), "vj-post-"));
     writeFileSync(join(dir, "o.json"), JSON.stringify({ other: {} }));
     expect(() => scheduleBody(args({ job: "j", accounts: "a", caption: "c", options: join(dir, "o.json") }), cli)).toThrow(
@@ -162,7 +170,7 @@ describe("vidjutsu accounts and post (CLI against a fake API)", () => {
         { route: "POST /social-accounts/connect", body: { platform: "youtube", return_to: "page" } },
         {
           route: "POST /posts",
-          body: { caption: "Day 1", media: { job_id: "j1" }, accounts: [{ id: "sa_1" }], at: "2026-12-01T15:00:00.000Z" },
+          body: { caption: "Day 1", media: { job_id: "j1" }, accounts: ["sa_1"], at: "2026-12-01T15:00:00.000Z" },
         },
         { route: "GET /posts?state=failed", body: undefined },
       ]);

@@ -236,57 +236,91 @@ export type SocialAccount = JsonObject & {
   id: string;
   platform: Platform;
   handle: string;
-  display_name?: string;
+  display_name?: string | null;
   /** `connected`, or a state that needs the person (follow reconnect_url). */
   state: string;
-  /** Posts to this account wait for the person's approval before they go out. */
+  /** Posts to this account wait as pending_approval until approvePost. */
   approve_before_posting: boolean;
-  connected_at: string;
+  connected_at: Json;
   /** Present when the platform needs the person to sign in again. */
   reconnect_url?: string;
 };
 /**
- * Where a post is: scheduled, awaiting_approval, dispatching, published,
- * partially_published (some accounts failed), failed, canceled, or
- * paused_unpaid (held until the account's payment is fixed).
+ * Where a post is: pending_approval (an account has approval on), scheduled,
+ * publishing, published, partial (some accounts failed), failed, canceled, or
+ * paused_unpaid (held until an overdue payment is fixed).
  */
 export type PostState =
+  | "pending_approval"
   | "scheduled"
-  | "awaiting_approval"
-  | "dispatching"
+  | "publishing"
   | "published"
-  | "partially_published"
+  | "partial"
   | "failed"
   | "canceled"
   | "paused_unpaid";
+/** Where a post is on one account. */
+export type TargetState = "pending" | "publishing" | "published" | "failed" | "canceled";
+/**
+ * Platform options for one account, flat and snake_case.
+ * TikTok: privacy_level, allow_comment, allow_duet, allow_stitch, ai_generated,
+ * commercial_content (none, brand_organic, brand_content).
+ * YouTube: title (required, up to 100 letters), visibility (public, unlisted, private), tags.
+ * Instagram: ai_generated.
+ */
+export type PostOptions = JsonObject & {
+  privacy_level?: string;
+  allow_comment?: boolean;
+  allow_duet?: boolean;
+  allow_stitch?: boolean;
+  ai_generated?: boolean;
+  commercial_content?: "none" | "brand_organic" | "brand_content";
+  title?: string;
+  visibility?: "public" | "unlisted" | "private";
+  tags?: string[];
+};
 /** One account a post goes to, and how it went there. */
 export type PostTarget = JsonObject & {
-  account_id: string;
+  social_account_id: string;
   platform: Platform;
-  options: JsonObject;
-  state: string;
+  options: PostOptions;
+  state: TargetState;
   /** The live post on the platform, once published. */
   url?: string;
   error?: Json;
 };
 export type Post = JsonObject & {
   id: string;
-  caption: string;
-  media: JsonObject & { hash: string; job_id?: string };
+  caption: string | null;
+  media: JsonObject & { hash: string; type: "video" | "image"; source: JsonObject };
   targets: PostTarget[];
-  scheduled_for: string;
+  /** When it goes out (ms since 1970), or null for now. */
+  scheduled_for: number | null;
   state: PostState;
-  created_at: string;
-  published_at?: string;
+  created_at: Json;
+  published_at?: Json;
+};
+/** One post's numbers on one account, as the platform reported them at captured_at. */
+export type PostStat = JsonObject & {
+  social_account_id: string;
+  platform: Platform;
+  captured_at: Json;
+  views?: number | null;
+  likes?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+  saves?: number | null;
+  impressions?: number | null;
+  reach?: number | null;
 };
 /** What schedulePost takes. `at` left out means now. */
 export type SchedulePost = {
-  caption: string;
-  /** A finished render ({job_id}) or a stored file ({hash}). */
-  media: { job_id: string } | { hash: string };
-  /** The accounts to post to, each with its platform options. */
-  accounts: Array<{ id: string; options?: JsonObject }>;
-  /** When to post, as an ISO time. Left out: post now. */
+  /** A finished render ({job_id}) or a stored file ({hash, type?}). */
+  media: { job_id: string } | { hash: string; type?: "video" | "image" };
+  /** The accounts to post to: an id, or {id, options}. */
+  accounts: Array<string | { id: string; options?: PostOptions }>;
+  caption?: string;
+  /** When to post, as an ISO time with a zone. Left out: post now. */
   at?: string;
   idempotency_key?: string;
 };
@@ -824,7 +858,7 @@ export class VidJutsu {
    * after: "app" (the web app's accounts settings) or "page" (a plain page).
    */
   connectAccount(platform: Platform, options: { return_to?: "app" | "page" } = {}) {
-    return this.request<JsonObject & { url: string; expires_at: string; platform: Platform }>(
+    return this.request<JsonObject & { url: string; expires_at: Json; platform: Platform; next?: Json }>(
       "POST",
       "/social-accounts/connect",
       { platform, ...options },
@@ -834,9 +868,13 @@ export class VidJutsu {
   socialAccounts() {
     return this.request<JsonObject & { accounts: SocialAccount[] }>("GET", "/social-accounts");
   }
-  /** Disconnect a social account. Posts already scheduled to it fail for that account. */
-  disconnectAccount(accountId: string) {
-    return this.request<JsonObject & { account: SocialAccount }>("DELETE", `/social-accounts/${seg(accountId)}`);
+  /** Turn approval before posting on or off for one account. */
+  updateSocialAccount(socialAccountId: string, body: { approve_before_posting: boolean }) {
+    return this.request<JsonObject & { account: SocialAccount }>("POST", `/social-accounts/${seg(socialAccountId)}`, body);
+  }
+  /** Disconnect a social account. Its past posts and their numbers stay. */
+  disconnectAccount(socialAccountId: string) {
+    return this.request<JsonObject & { account: SocialAccount }>("DELETE", `/social-accounts/${seg(socialAccountId)}`);
   }
   /** Post a finished render or a stored file to one or more accounts, now or at `at`. */
   schedulePost(body: SchedulePost) {
@@ -849,17 +887,21 @@ export class VidJutsu {
   getPost(postId: string) {
     return this.request<JsonObject & { post: Post }>("GET", `/posts/${seg(postId)}`);
   }
-  /** Move a post that hasn't gone out yet to a new time (ISO). */
-  reschedulePost(postId: string, at: string) {
+  /** Move a post that hasn't gone out yet to a new time (ISO with a zone), or null to post it now. */
+  reschedulePost(postId: string, at: string | null) {
     return this.request<JsonObject & { post: Post }>("POST", `/posts/${seg(postId)}/reschedule`, { at });
   }
   /** Cancel a post that hasn't gone out yet. */
   cancelPost(postId: string) {
     return this.request<JsonObject & { post: Post }>("POST", `/posts/${seg(postId)}/cancel`);
   }
-  /** How a post is doing on each account it went to (views, likes and the rest, as the platform reports them). */
+  /** Approve a post that is pending_approval, so it goes out at its time. */
+  approvePost(postId: string) {
+    return this.request<JsonObject & { post: Post }>("POST", `/posts/${seg(postId)}/approve`);
+  }
+  /** A post's numbers on each account: views, likes, comments, shares, saves, impressions and reach. */
   postStats(postId: string) {
-    return this.request<JsonObject & { stats: Json }>("GET", `/posts/${seg(postId)}/stats`);
+    return this.request<JsonObject & { stats: PostStat[] }>("GET", `/posts/${seg(postId)}/stats`);
   }
 
   // ---- Motion graphics ----
