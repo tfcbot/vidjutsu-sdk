@@ -172,6 +172,24 @@ Check `post get` for `published` and each target's live `url`, or for `partial`,
 `failed`, or `canceled` results. VidJutsu enforces authorization and platform
 requirements server-side; `--at now` does not bypass them.
 
+## Playbooks
+
+A playbook is a method for one kind of video that an agent follows step by
+step. VidJutsu has built-ins, and you can save your own:
+
+```sh
+vidjutsu playbooks                               # built-ins and yours
+vidjutsu playbooks get clean-cut --out my-cut    # SKILL.md, playbook.json, files/
+# edit my-cut/SKILL.md, then save it as your own:
+vidjutsu playbooks save my-cut                   # answers its id, e.g. "my-cut"
+vidjutsu playbooks save my-cut --id my-cut       # update it later
+vidjutsu playbooks delete my-cut
+```
+
+```ts
+await client.savePlaybook({ name: "My Cut", instructions: "# My Cut\n\n1. ...", defaults: { pause_seconds: 0.5 } });
+```
+
 ## Agents (MCP)
 
 Point any MCP client at `https://api.vidjutsu.ai/mcp`. It signs in with OAuth,
@@ -184,6 +202,7 @@ REST operations, and the SDK has one method for each:
 | Projects | `list_projects`, `init`, `import_timeline`, `show`, `head`, `edit`, `level`, `timeline_words`, `files`, `search_words` |
 | History | `history`, `undo`, `restore` |
 | Shot list | `shot_list`, `get_shot`, `shot_list_edit`, `shot_list_import`, `templates`, `save_template`, `delete_template` |
+| Playbooks | `playbooks`, `get_playbook`, `save_playbook`, `delete_playbook` |
 | Layouts | `layouts`, `save_layout`, `delete_layout`, `apply_layout` |
 | Sound | `studio_sound` |
 | Look and check | `frame`, `check` |

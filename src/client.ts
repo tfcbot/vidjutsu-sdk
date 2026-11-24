@@ -108,6 +108,25 @@ export type CaptionsOption = {
 export type ShotListOperation = JsonObject & { op: string };
 
 /** The kinds of shot list column. A column's type never changes. */
+/** A playbook to save. `name` and `instructions` are needed for a new one. */
+export type PlaybookInput = {
+  id?: string;
+  name?: string;
+  /** The whole method as Markdown, written so an agent can follow it step by step (like a SKILL.md). */
+  instructions?: string;
+  tagline?: string;
+  description?: string;
+  format?: Array<"16:9" | "9:16" | "1:1" | "4:5">;
+  tags?: string[];
+  /** Its settings, snake_case keys: text, numbers, true/false or null. */
+  defaults?: Record<string, string | number | boolean | null>;
+  /** The VidJutsu tools it uses, in order. Only real tool names. */
+  tools?: string[];
+  steps?: string[];
+  /** Starter files, e.g. graphics scenes. */
+  files?: Array<{ path: string; text: string }>;
+};
+
 export type ColumnType =
   | "text"
   | "long_text"
@@ -734,6 +753,29 @@ export class VidJutsu {
   /** Delete one of your templates. Projects made from it keep their columns. */
   deleteTemplate(templateId: string) {
     return this.request("DELETE", `/shot-list-templates/${seg(templateId)}`);
+  }
+
+  // ---- Playbooks ----
+
+  /** The playbooks: the built-ins (builtin: true) and the ones saved to your account (builtin: false). */
+  playbooks() {
+    return this.request("GET", "/playbooks");
+  }
+  /** One playbook, built-in or saved: its instructions (the method), defaults, tools, steps and starter files. */
+  getPlaybook(playbookId: string) {
+    return this.request("GET", `/playbooks/${seg(playbookId)}`);
+  }
+  /**
+   * Save a playbook to your account. Leave out `id` for a new one (its id is
+   * made from the name); send the id of one you saved to update it: fields you
+   * send replace the old ones, the rest stay. Built-ins can't be changed.
+   */
+  savePlaybook(body: PlaybookInput) {
+    return this.request("POST", "/playbooks", body);
+  }
+  /** Delete a playbook you saved. */
+  deletePlaybook(playbookId: string) {
+    return this.request("DELETE", `/playbooks/${seg(playbookId)}`);
   }
 
   // ---- Screen and camera layouts ----

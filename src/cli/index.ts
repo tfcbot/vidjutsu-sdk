@@ -9,6 +9,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type BugReport, type Json, type JsonObject, type StartedJob } from "../client";
 import { GRAPHICS_HELP, graphics } from "./graphics";
+import { readPlaybook, writePlaybookFolder } from "./playbooks";
 import { PUBLISHING_HELP, accounts, post } from "./publishing";
 import { VERSION } from "./version";
 
@@ -59,6 +60,13 @@ Shot list
                                      Bring an episode plan in as the shot list
   templates [list | save <file.json> | delete <template>]
                                      Shot list templates (save takes {name, columns} or {name, project})
+
+Playbooks
+  playbooks [list | get <id> [--out <folder>] | save <file.json | folder> [--id <id>] | delete <id>]
+                                     Methods for one kind of video: the built-ins and your own. save takes
+                                     {name, instructions, ...} or a folder with SKILL.md (the method),
+                                     playbook.json (optional metadata) and files/ (starter files);
+                                     --id updates one you saved. get --out writes that folder.
 
 Layouts and sound
   layouts [list | save <file.json> | delete <layout_id>]
@@ -474,6 +482,23 @@ async function run(argv: string[]) {
       }
       if (action === "delete") return print(await client().deleteTemplate(need(value, "template id")));
       return fail(`unknown templates action ${action}`);
+    }
+    case "playbooks": {
+      const [action = "list", value] = rest;
+      if (action === "list") return print(await client().playbooks());
+      if (action === "get") {
+        const playbook = (await client().getPlaybook(need(value, "playbook id"))) as JsonObject;
+        const out = flag(args, "out");
+        if (out) writePlaybookFolder(out, playbook);
+        return print(playbook);
+      }
+      if (action === "save") {
+        const body = readPlaybook(need(value, "playbook file or folder (or - for stdin)"));
+        const id = flag(args, "id");
+        return print(await client().savePlaybook(id ? { ...body, id } : body));
+      }
+      if (action === "delete") return print(await client().deletePlaybook(need(value, "playbook id")));
+      return fail(`unknown playbooks action ${action}`);
     }
     case "layouts": {
       const [action = "list", value] = rest;
