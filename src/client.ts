@@ -855,7 +855,7 @@ export class VidJutsu {
   /**
    * Start connecting a social account: open the answer's `url` in a browser
    * to sign in to the platform. `return_to` says where the browser lands
-   * after: "app" (the web app's accounts settings) or "page" (a plain page).
+   * after: "page" (a plain page, the default) or "app" (the web app's accounts settings).
    */
   connectAccount(platform: Platform, options: { return_to?: "app" | "page" } = {}) {
     return this.request<JsonObject & { url: string; expires_at: Json; platform: Platform; next?: Json }>(
