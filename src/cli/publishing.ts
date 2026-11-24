@@ -39,7 +39,11 @@ const SCHEDULE_FLAGS = new Set(["job", "hash", "type", "accounts", "caption", "c
 /** An ISO time with a date, a time of day and a zone (Z or +hh:mm), sent in UTC. */
 export function isoTime(value: string, fail: (message: string) => never): string {
   const ms = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/i.test(value) ? Date.parse(value) : NaN;
-  if (Number.isNaN(ms)) fail(`--at must be an ISO time such as 2026-12-01T15:00:00Z (got ${value})`);
+  // Date.parse rolls impossible dates (such as February 30) into the next month.
+  const date = value.slice(0, 10);
+  if (Number.isNaN(ms) || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) {
+    fail(`--at must be an ISO time such as 2026-12-01T15:00:00Z (got ${value})`);
+  }
   return new Date(ms).toISOString();
 }
 

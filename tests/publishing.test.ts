@@ -228,6 +228,7 @@ describe("vidjutsu accounts and post (CLI against a fake API)", () => {
       expect(missingTime.code).toBe(1);
       expect(missingTime.err).toContain("--at requires a value");
       expect((await schedule("--at", "2027-01-03T13:00:00")).code).toBe(1);
+      expect((await schedule("--at", "2027-02-29T13:00:00Z")).err).toContain("--at must be an ISO time");
       expect((await schedule("--att", at)).code).toBe(1);
       expect((await schedule("--express-consent-given", "true")).code).toBe(1);
       expect(seen).toEqual([]);
