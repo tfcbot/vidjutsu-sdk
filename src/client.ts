@@ -872,7 +872,7 @@ export class VidJutsu {
   updateSocialAccount(socialAccountId: string, body: { approve_before_posting: boolean }) {
     return this.request<JsonObject & { account: SocialAccount }>("POST", `/social-accounts/${seg(socialAccountId)}`, body);
   }
-  /** Disconnect a social account. Its past posts and their numbers stay. */
+  /** Disconnect a social account: its scheduled posts are canceled; past posts and their numbers stay. */
   disconnectAccount(socialAccountId: string) {
     return this.request<JsonObject & { account: SocialAccount }>("DELETE", `/social-accounts/${seg(socialAccountId)}`);
   }
@@ -880,7 +880,7 @@ export class VidJutsu {
   schedulePost(body: SchedulePost) {
     return this.request<JsonObject & { post: Post }>("POST", "/posts", body);
   }
-  /** Your posts, newest first. Pass next_cursor as cursor for the next page. */
+  /** Your posts, the soonest scheduled first, then the newest. Pass next_cursor as cursor for the next page. */
   posts(options: { state?: PostState; cursor?: string; limit?: number } = {}) {
     return this.request<JsonObject & { posts: Post[]; next_cursor: string | null }>("GET", `/posts${query(options)}`);
   }
