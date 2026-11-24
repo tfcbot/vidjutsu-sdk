@@ -102,6 +102,37 @@ const job = await client.renderGraphics(files, { width: 1920, height: 1080, scen
 console.log(job.output); // { media: { id, ... }, source: { bundle, film }, ... }
 ```
 
+## Publishing
+
+Connect TikTok, Instagram and YouTube accounts, then post a finished render
+(or any stored video) to them, now or at a time. Your plan sets how many
+accounts you can connect.
+
+```sh
+vidjutsu accounts connect youtube          # prints a link: sign in to YouTube there
+vidjutsu accounts                          # your accounts and their ids
+vidjutsu post schedule --job <render job_id> --accounts sa_1,sa_2 \
+  --caption "Day 1 of 30" --at 2026-12-01T15:00:00Z
+vidjutsu posts --state scheduled           # what is coming up
+vidjutsu post stats <post_id>              # how the post is doing on each account
+```
+
+```ts
+const { url } = await client.connectAccount("tiktok");
+const { accounts } = await client.socialAccounts();
+const { post } = await client.schedulePost({
+  caption: "Day 1 of 30",
+  media: { job_id: render.job_id },
+  accounts: accounts.map((a) => ({ id: a.id })),
+  at: "2026-12-01T15:00:00Z", // leave out to post now
+});
+```
+
+A post is `scheduled` until it goes out, then `published` (each account's
+`url` is the live post), `partially_published` or `failed`. Posts to an
+account with approval on wait as `awaiting_approval`. While a payment is
+overdue, posts wait as `paused_unpaid` and go out once it is fixed.
+
 ## Agents (MCP)
 
 Point any MCP client at `https://api.vidjutsu.ai/mcp`. It signs in with OAuth,
@@ -120,6 +151,7 @@ REST operations, and the SDK has one method for each:
 | Motion graphics | `graphics_files`, `make_graphics`, `graphics_status`, `cancel_graphics`, `graphics_source`, `graphics_list`, `graphics_read`, `graphics_write` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
 | Renders and prices | `quote`, `render`, `render_status`, `cancel_render`, `captions` |
+| Publishing | `connect_account`, `social_accounts`, `disconnect_account`, `schedule_post`, `posts`, `get_post`, `reschedule_post`, `cancel_post`, `post_stats` |
 | Bug reports | `report_bug` (only the VidJutsu team can read reports) |
 
 | Account | `account`, `create_account`, `usage`, `wallet`, `entitlements`, `create_key`, `list_keys`, `revoke_key`, `billing_checkout`, `billing_top_up`, `billing_auto_top_up`, `billing_portal` |
@@ -152,7 +184,7 @@ for await (const { event, data } of client.stream("film")) {
 ```
 
 Errors are `VidJutsuError` with the API's `code` and `message`. A 402 also
-carries `fixUrl`, the Stripe link that fixes it (sign-up or top-up).
+carries `fixUrl`, the link that fixes it (sign-up, top-up or plan upgrade).
 
 ## Release
 

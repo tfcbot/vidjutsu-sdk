@@ -4,7 +4,7 @@
 // Every method maps to one public operation (the same names as the MCP
 // tools). JSON in and out is snake_case, as the API sends it. Errors are
 // thrown as VidJutsuError with the API's {code, message} and, for 402s, the
-// link that fixes them (checkout_url, top_up_url or portal_url).
+// link that fixes them (checkout_url, top_up_url, portal_url or upgrade_url).
 
 export const DEFAULT_BASE_URL = "https://api.vidjutsu.ai";
 /** A bug report for reportBug. Only `summary` is required. */
@@ -59,9 +59,9 @@ export class VidJutsuError extends Error {
     super(message);
     this.name = "VidJutsuError";
   }
-  /** The Stripe link that fixes a 402, when the API sent one. */
+  /** The link that fixes a 402 (sign-up, top-up, card or plan upgrade), when the API sent one. */
   get fixUrl(): string | undefined {
-    const url = this.body.checkout_url ?? this.body.top_up_url ?? this.body.portal_url;
+    const url = this.body.checkout_url ?? this.body.top_up_url ?? this.body.portal_url ?? this.body.upgrade_url;
     return typeof url === "string" ? url : undefined;
   }
 }
@@ -226,6 +226,70 @@ export function graphicsText(path: string, data: Uint8Array): string | undefined
     return undefined;
   }
 }
+
+// ---- Publishing ----
+
+/** The platforms an account can be connected on. */
+export type Platform = "tiktok" | "instagram" | "youtube";
+/** A social account connected to VidJutsu, posted to with schedulePost. */
+export type SocialAccount = JsonObject & {
+  id: string;
+  platform: Platform;
+  handle: string;
+  display_name?: string;
+  /** `connected`, or a state that needs the person (follow reconnect_url). */
+  state: string;
+  /** Posts to this account wait for the person's approval before they go out. */
+  approve_before_posting: boolean;
+  connected_at: string;
+  /** Present when the platform needs the person to sign in again. */
+  reconnect_url?: string;
+};
+/**
+ * Where a post is: scheduled, awaiting_approval, dispatching, published,
+ * partially_published (some accounts failed), failed, canceled, or
+ * paused_unpaid (held until the account's payment is fixed).
+ */
+export type PostState =
+  | "scheduled"
+  | "awaiting_approval"
+  | "dispatching"
+  | "published"
+  | "partially_published"
+  | "failed"
+  | "canceled"
+  | "paused_unpaid";
+/** One account a post goes to, and how it went there. */
+export type PostTarget = JsonObject & {
+  account_id: string;
+  platform: Platform;
+  options: JsonObject;
+  state: string;
+  /** The live post on the platform, once published. */
+  url?: string;
+  error?: Json;
+};
+export type Post = JsonObject & {
+  id: string;
+  caption: string;
+  media: JsonObject & { hash: string; job_id?: string };
+  targets: PostTarget[];
+  scheduled_for: string;
+  state: PostState;
+  created_at: string;
+  published_at?: string;
+};
+/** What schedulePost takes. `at` left out means now. */
+export type SchedulePost = {
+  caption: string;
+  /** A finished render ({job_id}) or a stored file ({hash}). */
+  media: { job_id: string } | { hash: string };
+  /** The accounts to post to, each with its platform options. */
+  accounts: Array<{ id: string; options?: JsonObject }>;
+  /** When to post, as an ISO time. Left out: post now. */
+  at?: string;
+  idempotency_key?: string;
+};
 
 export interface UploadPart {
   number: number;
@@ -752,6 +816,52 @@ export class VidJutsu {
       await new Promise((resolve) => setTimeout(resolve, options.intervalMs ?? 3000));
     }
   }
+  // ---- Publishing ----
+
+  /**
+   * Start connecting a social account: open the answer's `url` in a browser
+   * to sign in to the platform. `return_to` says where the browser lands
+   * after: "app" (the web app's accounts settings) or "page" (a plain page).
+   */
+  connectAccount(platform: Platform, options: { return_to?: "app" | "page" } = {}) {
+    return this.request<JsonObject & { url: string; expires_at: string; platform: Platform }>(
+      "POST",
+      "/social-accounts/connect",
+      { platform, ...options },
+    );
+  }
+  /** The social accounts you have connected. */
+  socialAccounts() {
+    return this.request<JsonObject & { accounts: SocialAccount[] }>("GET", "/social-accounts");
+  }
+  /** Disconnect a social account. Posts already scheduled to it fail for that account. */
+  disconnectAccount(accountId: string) {
+    return this.request<JsonObject & { account: SocialAccount }>("DELETE", `/social-accounts/${seg(accountId)}`);
+  }
+  /** Post a finished render or a stored file to one or more accounts, now or at `at`. */
+  schedulePost(body: SchedulePost) {
+    return this.request<JsonObject & { post: Post }>("POST", "/posts", body);
+  }
+  /** Your posts, newest first. Pass next_cursor as cursor for the next page. */
+  posts(options: { state?: PostState; cursor?: string; limit?: number } = {}) {
+    return this.request<JsonObject & { posts: Post[]; next_cursor: string | null }>("GET", `/posts${query(options)}`);
+  }
+  getPost(postId: string) {
+    return this.request<JsonObject & { post: Post }>("GET", `/posts/${seg(postId)}`);
+  }
+  /** Move a post that hasn't gone out yet to a new time (ISO). */
+  reschedulePost(postId: string, at: string) {
+    return this.request<JsonObject & { post: Post }>("POST", `/posts/${seg(postId)}/reschedule`, { at });
+  }
+  /** Cancel a post that hasn't gone out yet. */
+  cancelPost(postId: string) {
+    return this.request<JsonObject & { post: Post }>("POST", `/posts/${seg(postId)}/cancel`);
+  }
+  /** How a post is doing on each account it went to (views, likes and the rest, as the platform reports them). */
+  postStats(postId: string) {
+    return this.request<JsonObject & { stats: Json }>("GET", `/posts/${seg(postId)}/stats`);
+  }
+
   // ---- Motion graphics ----
 
   /**
