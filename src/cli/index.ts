@@ -9,6 +9,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { DEFAULT_BASE_URL, VidJutsu, VidJutsuError, type BugReport, type Json, type JsonObject, type StartedJob } from "../client";
 import { GRAPHICS_HELP, graphics } from "./graphics";
+import { PUBLISHING_HELP, accounts, post } from "./publishing";
 import { VERSION } from "./version";
 
 const HELP = `vidjutsu ${VERSION}: video editing for agents, in the cloud.
@@ -86,6 +87,8 @@ Bug reports
                                      Tell the VidJutsu team about a bug (free; only the team can read it)
 
 ${GRAPHICS_HELP}
+
+${PUBLISHING_HELP}
 
 Prices and renders
   quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
@@ -628,6 +631,12 @@ async function run(argv: string[]) {
     }
     case "graphics":
       return graphics(rest, args, { client, print, say, fail, need, flag });
+    case "accounts":
+      return accounts(rest, args, { client, print, say, fail, need, flag });
+    case "post":
+      return post(rest, args, { client, print, say, fail, need, flag });
+    case "posts":
+      return post(["list", ...rest], args, { client, print, say, fail, need, flag });
     case "status":
       return print(await client().renderStatus(need(rest[0], "job id")));
     case "cancel":
