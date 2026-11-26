@@ -1,10 +1,13 @@
 name: Publish to npm
 
-# Runs when a release is published on GitHub. Release CLI drafts a release
-# for each new version merged to main; a person reviews the draft on the
-# releases page and clicks Publish, which creates the v<version> tag and
-# publishes that version to npm here.
+# Publishes the package to npm after "Release CLI" made release v<version>
+# for a new version merged to main (BIZ-2495). A release published by hand
+# also publishes. Skips a version npm already has.
 on:
+  workflow_run:
+    workflows: [Release CLI]
+    types: [completed]
+    branches: [main]
   release:
     types: [published]
 
@@ -18,27 +21,53 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name == 'release' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     environment: npm
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
+
+      - name: A published release and a version npm doesn't have
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$(gh release view "v$version" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null)" != "false" ]; then
+            echo "v$version has no published release; nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          elif npm view "vidjutsu@$version" version > /dev/null 2>&1; then
+            echo "vidjutsu@$version is already on npm."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: oven-sh/setup-bun@v2
+        if: steps.version.outputs.publish == 'true'
         with:
           bun-version: latest
 
       - uses: actions/setup-node@v4
+        if: steps.version.outputs.publish == 'true'
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
 
       - run: bun install
+        if: steps.version.outputs.publish == 'true'
 
       # Fails if the release's tag isn't v<package.json version>.
       - run: bun run check:release
+        if: steps.version.outputs.publish == 'true'
 
       - run: bun test
+        if: steps.version.outputs.publish == 'true'
 
       - run: bun run build
+        if: steps.version.outputs.publish == 'true'
 
       - run: npm publish --provenance --access public
+        if: steps.version.outputs.publish == 'true'
