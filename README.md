@@ -58,7 +58,6 @@ vidjutsu working-on film "Tightening the intro" --from 0 --to 30
 vidjutsu history film                    # every revision, with its author and changes
 vidjutsu undo film <revision> --change 0 # undo one change, keeping later edits
 vidjutsu layout film circle_corner       # screen and camera with a preset
-vidjutsu quote film                      # what a render or Studio Sound would cost
 vidjutsu studio-sound film               # clean every voice (about 1.5 cents a voice minute)
 vidjutsu events film --follow            # live change notices
 vidjutsu frame film 41.967 42            # stills either side of a cut, as the render draws them
@@ -189,7 +188,7 @@ REST operations, and the SDK has one method for each:
 | Look and check | `frame`, `check` |
 | Motion graphics | `graphics_files`, `make_graphics`, `graphics_status`, `cancel_graphics`, `graphics_source`, `graphics_list`, `graphics_read`, `graphics_write` |
 | Working together | `events`, `set_presence`, `working_on`, `comments`, `add_comment`, `resolve_comment`, `delete_comment` |
-| Renders and prices | `quote`, `render`, `render_status`, `cancel_render`, `captions` |
+| Renders | `render`, `render_status`, `cancel_render`, `captions` |
 | Publishing | `connect_account`, `social_accounts`, `update_social_account`, `disconnect_account`, `schedule_post`, `posts`, `get_post`, `reschedule_post`, `cancel_post`, `approve_post`, `post_stats` |
 | Bug reports | `report_bug` (only the VidJutsu team can read reports) |
 
