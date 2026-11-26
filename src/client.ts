@@ -759,15 +759,11 @@ export class VidJutsu {
     return this.request("POST", `/projects/${seg(project)}/layout`, { preset, ...options }, idempotencyKey);
   }
 
-  // ---- Studio Sound and prices ----
+  // ---- Studio Sound ----
 
-  /** Turn on Studio Sound: clean every voice and swap the cleaned copies onto their clips. Billed by box time like every job (about 1.5 cents a voice minute); check with quote(). */
+  /** Turn on Studio Sound: clean every voice and swap the cleaned copies onto their clips. Billed after by box time like every job (about 1.5 cents a voice minute). */
   studioSound(project: string, options: { media?: string[]; branch?: string } = {}, idempotencyKey?: string) {
     return this.request<StartedJob>("POST", `/projects/${seg(project)}/studio-sound`, options, idempotencyKey);
-  }
-  /** What a render at each quality and Studio Sound would cost, and whether your wallet lets each start. Free. */
-  quote(project: string, options: { media?: string[] } = {}) {
-    return this.request("GET", `/projects/${seg(project)}/quote${query({ media: options.media?.join(",") })}`);
   }
 
   // ---- Look at and check a cut ----

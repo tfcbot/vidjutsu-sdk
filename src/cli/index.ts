@@ -91,7 +91,6 @@ ${GRAPHICS_HELP}
 ${PUBLISHING_HELP}
 
 Prices and renders
-  quote <project> [--media <id,id>]  What a render and Studio Sound would cost, before you spend
   render <project> [--json <body>] [--no-wait] [--out <file>]
          [--captions] [--captions-position top] [--captions-size small|large] [--captions-background none]   Burn in captions (no extra charge)
   captions <project> [--format srt|vtt] [--revision <r>] [--out <file>]   The cut's captions as SRT or WebVTT (free)
@@ -530,8 +529,6 @@ async function run(argv: string[]) {
         await client().importTimeline({ project, timeline, files, format: format as "fcpxml" | "edl" | undefined }),
       );
     }
-    case "quote":
-      return print(await client().quote(need(rest[0], "project"), { media: list(args, "media") }));
     case "events": {
       const project = need(rest[0], "project");
       if (!args.flags.follow) {

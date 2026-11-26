@@ -128,13 +128,11 @@ describe("VidJutsu", () => {
     const api = new VidJutsu({ fetch: fetcher });
     await api.history("film", { limit: 5 });
     await api.searchWords("film", "hello world", { limit: 3 });
-    await api.quote("film", { media: ["take1", "take2"] });
     await api.listProjects();
     await api.show("film", { revision: "r1" });
     expect(calls.map((call) => call.url)).toEqual([
       "https://api.vidjutsu.ai/projects/film/history?limit=5",
       "https://api.vidjutsu.ai/projects/film/words?query=hello+world&limit=3",
-      "https://api.vidjutsu.ai/projects/film/quote?media=take1%2Ctake2",
       "https://api.vidjutsu.ai/projects",
       "https://api.vidjutsu.ai/projects/film?revision=r1",
     ]);
