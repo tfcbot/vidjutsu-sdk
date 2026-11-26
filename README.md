@@ -226,8 +226,9 @@ carries `fixUrl`, the link that fixes it (sign-up, top-up or plan upgrade).
 
 ## Release
 
-Bump `package.json` and `src/cli/version.ts` together and merge. CI then
-builds the standalone binaries and opens a **draft** release `v<version>` on the
-[releases page](https://github.com/tfcbot/vidjutsu-sdk/releases). Review it and
-click **Publish release**: that creates the tag and publishes the package to npm
-(trusted publishing). Nothing is public until you publish the draft.
+Bump `package.json` and `src/cli/version.ts` together and merge: merging is
+the approval. CI checks that the production API already serves every route
+the SDK calls (`scripts/check-api.ts`, waiting while a gateway release is
+under way), builds the standalone binaries, publishes release `v<version>` on
+the [releases page](https://github.com/tfcbot/vidjutsu-sdk/releases), and then
+publishes the package to npm (trusted publishing).

@@ -1,10 +1,10 @@
 name: Release CLI
 
 # Runs on every push to main. When package.json has a version with no GitHub
-# release yet, it builds the standalone binaries and attaches them to a DRAFT
-# release v<version>. Nothing is public until a person reviews the draft on
-# the releases page and clicks Publish: that creates the tag, and Publish to
-# npm then publishes the package.
+# release yet, it checks that the production API already serves every route
+# this SDK calls (waiting while a gateway release is under way), builds the
+# standalone binaries and publishes release v<version> with them. "Publish to
+# npm" then publishes the package (BIZ-2495: merging is the approval).
 on:
   push:
     branches: [main]
@@ -50,6 +50,12 @@ jobs:
       - run: bun test
         if: steps.version.outputs.release == 'true'
 
+      - name: Production API serves every route
+        if: steps.version.outputs.release == 'true'
+        run: bun scripts/check-api.ts https://api.vidjutsu.ai
+        env:
+          CHECK_API_WAIT_MINUTES: "45"
+
       - run: bun run build
         if: steps.version.outputs.release == 'true'
 
@@ -71,7 +77,8 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           target_commitish: ${{ github.sha }}
           name: VidJutsu ${{ steps.version.outputs.tag }}
-          draft: true
+          draft: false
+          make_latest: true
           generate_release_notes: true
           files: |
             dist/vidjutsu-darwin-arm64
